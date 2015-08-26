@@ -1,0 +1,32 @@
+/*
+  Projects
+*/
+.single_project_block > .project_img_wrapper {
+  display: flex;
+  justify-content: space-around;
+  border-style: solid;
+  border-width: 1px;
+  margin-top: 1%;
+  margin-bottom: 1%;
+  background-color: #b3b3b3;
+}
+
+.project_img_wrapper > img:is(:only-child) {
+  min-height: 100px;
+  max-width: 60%;
+  max-height: 350px;
+}
+
+.project_img_wrapper > img:not(:only-child) {
+  min-height: 100px;
+  max-width: 48%;
+  max-height: 400px;
+}
+
+.single_project_block {
+  margin-bottom: 5%;
+}
+
+.about-company-logo {
+  max-height: 28px;
+}
