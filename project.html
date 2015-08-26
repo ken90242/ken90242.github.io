@@ -1,0 +1,291 @@
+<h1>Papers</h1> 
+
+<section>
+  <ul>
+    <li>
+      <b>A Deep Learning Model for Extracting Live Streaming Video Highlights using Audience Messages</b>.
+      [<a href="https://dl.acm.org/doi/10.1145/3375959.3375965" target="_blank">pdf</a>]
+      <!-- [<a href="#" target="_blank">demo</a>] -->
+      <br />
+      <u>Hung-Kuang Han</u>, Yu-Chen Huang, and Chien Chin Chen.<br />
+      in <i><a href="http://www.aiccc.net/" target="_blank">Artificial Intelligence and Cloud Computing Conference (AICCC)</a></i>, 2019
+    </li>
+  </ul>
+</section>
+
+<h1>Professional Projects</h1>
+
+<section>
+  <ul>
+    <li class="single_project_block">
+      <b>Curve (CNCF Open Source): Warmup List and Stop Interfaces</b>.
+      [<a href="https://github.com/opencurve/curve/pull/2652" target="_blank">pull request</a>]
+      [<code>C++</code> | <code>Go</code>]
+      <div class="project_img_wrapper">
+        <img src="image/projects/warmup_op_diagram.png"/>
+        <img src="image/projects/warmup_list_add_op.gif"/>
+      </div>
+      <br/>
+      <br/>
+      <p>
+        With CurveFS and object storage like MinIO or AWS S3, our data is stored remotely.
+        <br/>
+        Whenever we access a file in CurveFS, we have to fetch it from the remote platform.
+        <br/>
+        This process involves network connections, file writing, and memory access, causing delays.
+        <br/>
+        To reduce waiting times, the warmup tool lets users pre-fetch files they might need in advance, so these files are ready when required.
+        <br/>
+        This feature includes three main parts:
+        <br/>
+        1. Not overwriting the existing file list.
+        <br/>
+        2. Providing an interface to cancel warmup jobs and their related tasks.
+        <br/>
+        3. Offering an interface to list all ongoing warmup jobs for a specific file system.
+        <br/>
+        <br/>
+        By adding these features, we have given Curve users the ability to perform a wider range of actions and improved the reliability of file retrieval.
+      </p>
+    </li>
+
+    <li class="single_project_block">
+      <b>Riot Games: Team Matchmaking System</b>.
+      [<code>Java</code> | <code>Python</code> | <code>Spring</code>]
+      <div class="project_img_wrapper">
+        <img src="image/projects/offrole-parity-improve.jpg"/>
+      </div>
+      <br/>
+      <b>Released on production</b>: <a href="https://www.leagueoflegends.com/en-us/news/dev/matchmaking-and-champion-select-fall-2022/">Riot News - MATCHMAKING AND CHAMPION SELECT</a>
+      <br/>
+      <p>
+        The image shows the off role parity rate significantly increasing (blue area) after (blue circle) I published the change to a particular region.<br/>
+        This feature aims to enhance the fairness of players' matches. In the past, players may get assigned to a position they are pretty bad at and play against another player who got his most confident position. To eliminate these perceivable disadvantaged, I redesigned the matching algorithms and bounded matches to be player-with-less-confident-position v.s. player-with-less-confident-position and player-with-most-confident-position v.s. player-with-most-confident-position.
+        However, the new algorithm might bring some side effects that increase players' queue time. To minimize the side effect while keeping the benefits, I have experimented with over 2 million matches in the last year and determined the best version of the matching algorithm.
+        The backend services used Java, Spring, and some internal frameworks.
+        The simulation used Jave, Python, and Databricks to collect, aggregate, and analyze the data.
+      </p>
+    </li>
+
+    <li class="single_project_block">
+      <b>Riot Games: League of Legends Client Application</b>.
+      [<code>C++</code> | <code>Java</code> | <code>JavaScript</code> | <code>Ember.js</code>]
+      <br/>
+      <div class="project_img_wrapper">
+        <img src="image/projects/scarce-position-indicator.gif"/>
+      </div>
+      <p>
+        This feature displays certain information to players when they choose certain positions.
+        Although it looked like a simple front-end change, the most challenging part lies on the backend side.
+        Since we have distributed almost all of our backend services to tons of different servers for load balance, like parties, lobbies, and matchmaking, there is a risk that players in the same lobby may not see the same information.
+        To ensure consistency, freshness, and traffic-saving, I end ups storing the shared information in a Redis-like cache and retrieve the information from the source to refresh them periodically.
+        The front end used Javascript, Ember.js, and C++ to manage front-end display and state.
+        The backend services used Java, Spring, and some internal frameworks.
+      </p>
+    </li>
+
+    <li class="single_project_block">
+      <b>Jisell: A voluntary startup iOS app project</b>.
+      [<code>Swift</code>]
+      <br/>
+      <div class="project_img_wrapper">
+        <img src="image/projects/jisell-ar.jpg"/>
+        <img src="image/projects/jisell-wallet.gif"/>
+      </div>
+      <p>
+        This iOS app aims to create a trendy gifting experience for clients with AR, blockchain, and object detection.
+        I was responsible for developing multiple user interfaces and pipe logic in-between using Swift.
+        This app was published on the app store and selected for VentureBridge Summer Cohort in 2022.
+      </p>
+    </li>
+
+    <li class="single_project_block">
+      <b>Course Project: Twitter Data Analysis</b>.
+      [<code>Java</code> | <code>hadoop</code> | <code>kafka</code> | <code>samza</code>]
+      <div class="project_img_wrapper">
+        <img src="image/projects/cc-twitter-prj.jpg"/>
+      </div>
+      <br/>
+      <p>
+        Implemented a high performance, fault-tolerant web service on AWS EC2 clusters for 1TB Twitter data analysis with read queries and achieved over 25,000 RPS on a limited budget given to work upon.
+        Processed 1TB raw data using Apache Spark and Scala to perform ETL and load data into MySQL database systems.
+        Used Jooby framework and load balancer for front end. Employed backend using MySQL, improved performance by implementing several optimizations ranging from schema design, database parameter tuning, horizontal scaling, replication and sharding, and monitored performance using AWS CloudWatch to identify performance bottlenecks.
+        Migrated the web service to use managed web services provided by Amazon in the final phase of the project.
+      </p>
+    </li>
+
+    <li class="single_project_block">
+      <b>Course Project: Uber-like ride request matching</b>.
+      [<code>Java</code> | <code>hadoop</code> | <code>kafka</code> | <code>samza</code>]
+      <div class="project_img_wrapper">
+        <img src="image/projects/cc-kafka-prj-frontend.gif"/>
+        <img src="image/projects/cc-kafka-prj-backend.gif"/>
+      </div>
+      <br/>
+      <p>
+        This project uses Kafka and Samza to process streaming uber-like events.<br/>
+        It matches each ride request to the nearest driver (real-time updated location) at the speed of 20000 rps.
+      </p>
+    </li>
+
+    <li class="single_project_block">
+      <b>Course Project: Emergency Social Network</b>.
+      [<a href="https://f21-esn-sa6.herokuapp.com/" target="_blank">online demo</a>]
+      [<code>ExpressJS</code> | <code>Webpack</code> | <code>Heroku</code> | <code>MongoDB</code> | <code>Jest</code>]
+      <div class="project_img_wrapper">
+        <img src="image/projects/fse-login-demo.gif"/>
+        <img src="image/projects/fse-other-functions-demo.gif"/>
+      </div>
+      <br /> 
+      <p>
+      This project is an application with a modern mobile web app interface.<br/>
+      It provides multiple functionalities helping users under emergency circumstances, such as real-time public/private/group chat, announcements, searching, emergency disaster-related features.<br/>
+      It is worth noting that the project required not to use any modern front-end framework, so we developed the front-end framework ourselves, applying several design patterns.
+      </p>
+    </li>
+
+    <li class="single_project_block">
+      <b>Houzz: Website Performance Monitoring Service</b>.
+      [<code>ReactJS</code> | <code>ExpressJS</code> | <code>JavaScript</code> | <code>k8s/Job</code> | <code>Docker</code> | <code>MongoDB</code>]
+      <div class="project_img_wrapper">
+        <img src="image/projects/houzz-lighthouse-demo.gif"/>
+      </div>
+      <br /> 
+      This project is a site speed monitoring platform based on google’s lighthouse library, and it is mainly composed of two components: dashboard and monitoring daemon.<br /> 
+      React.js and Node.js build the dashboard for its frontend & backend functionality.<br /> 
+      The monitoring daemon is a 24/7 service monitoring hundreds of website quality metrics modularized by Docker and k8s Job.
+    </li>
+
+    <li class="single_project_block">
+      <b>Trend Micro: Virtual Machine Configuration Tool</b>.
+      [<a href="https://downloadcenter.trendmicro.com/index.php?clk=tbl&clkval=4813" target="_blank">download</a>]
+      [<code>C++</code> | <code>C#</code> | <code>VBScript</code> | <code>Shell script</code>]
+      <div class="project_img_wrapper">
+        <img src="image/projects/vaipt-begin-demo.gif"/>
+        <img src="image/projects/vaipt-processing-demo.gif"/>
+      </div>
+      <br /> 
+      A GUI wizard application guides users to build sandboxed virtual machines. My recent delivery feature of that application supports users’ ability to create Linux sandboxed virtual machines. I used C# and Shell Script to enable the wizard application to set up an imported virtual machine automatically, install the required packages, and optimize the sandboxed virtual machine environment. This feature provides users a better chance to detect viruses by providing more sandboxed virtual machine options; now, over 34% of the existing sandboxed virtual machines are Linux-based.
+    </li>
+
+    <li class="single_project_block">
+      <b>Trend Micro: Virus Analyze Integration Core Module</b>.
+      [<code>Python</code> | <code>C++</code> | <code>Shell</code>]
+      <br/>
+      I responsible for handling the preprocess procedure when file samples were sent to the system to scan for viruses. One of the features I developed supports decompressing a compressed EGG-format file sample, which is mainly used in Korea. I used C++ to refactor the open-source project and integrate it into the current system’s existing procedure.
+    </li>
+
+    <li class="single_project_block">
+      <b>Diseases Detection in X-Ray images</b>.
+      [<a href="https://github.com/ken90242/ADLxMLDS2017_HTC_Medical/blob/master/report.pdf" target="_blank">report</a>]
+      [<a href="https://github.com/ken90242/ADLxMLDS2017_HTC_Medical" target="_blank">code</a>]
+      [<code>Python</code> | <code>VGG19</code> | <code>Grad Cam</code>]
+      <div class="project_img_wrapper">
+        <img class="project_img" src="image/projects/x-ray-demo.png"/>
+      </div>
+      In the capstone project of "Applied Deep learning," I developed a model to detect diseases in x-ray images by using a pre-trained VGG19 model and Grad-CAM to highlight bounding boxes. I assumed that the area, which CNN pays particular attention to while doing classification, should be the lesion's location. I used resampling, weighted loss function, and data augmentation to mitigate data imbalance problem.
+    </li>
+
+    <li class="single_project_block">
+      <b>Pedestrians Detection Project</b>.
+      [<a href="https://github.com/ken90242/lian-tung" target="_blank">details</a>]
+      [<code>Python</code> | <code>JavaScript</code> | <code>Mask RCNN</code>]
+      <div class="project_img_wrapper">
+        <img src="image/projects/china-unicom-object-detection.gif"/>
+        <img src="image/projects/china-unicom-annotation-tool-demo.png"/>
+      </div>
+      This project was my internship's capstone project at China Unicom, aiming to detect customer amount using real-time videos. I implemented the model with the state of art model: Mask-RCNN and significantly improved the accuracy performance. Also, I developed an online annotation tool to help users annotate ground truth images and generate JSON format output.
+    </li>
+
+    <li class="single_project_block">
+      <b>Quora-liked Forum</b>.
+      [<a href="https://github.com/ken90242/tellme.ken-han.info" target="_blank">code</a>][<a href="https://tellme.ken-han.info/" target="_blank">online demo</a>]
+      <div class="project_img_wrapper">
+        <img src="image/projects/tellme-demo-1.gif"/>
+        <img src="image/projects/tellme-demo-2.gif"/>
+      </div>
+      [<code>Python</code> | <code>React.js</code> | <code>Django</code> | <code>WebSocket</code> | <code>Redis</code> | <code>Nginx</code>]
+      <br/>
+      This project aimed to build a forum site like Quora. I Implemented an interactive interface by using React and Redux and the asynchronous AJAX framework Axios. I also created sustainable real-time notifications and instant messaging with WebSocket Reconnecting and Django Channels. I built the API in RESTful format with Django REST framework and MySQL, enabling common CRUD operations. Last, I deployed the website’s frontend and backend on Google Cloud Platform using Nginx to redirect requests.
+    </li>
+
+    <li class="single_project_block">
+      <b>Fintech Contest - Spendings Tracking Chat Bot</b>.
+      [<a href="https://github.com/ken90242/modelClassifier/blob/master/tech.pdf" target="_blank">model</a>]
+      [<a href="https://github.com/ken90242/modelClassifier" target="_blank">code</a>]
+      [<code>Python</code> | <code>Vue.js</code> | <code>Word2Vec</code> | <code>RNN</code>]
+      <br />
+      In the FinTech Hackathon 2017, a financial technology competition in Taiwan, my team received “The Best Team” award for our project customizing Artificial Accounts (Chatbot) which helps keep track of people’s daily expenditures. I used Word2vec from Google’s open source neural net to connect the words inputted by the user in meaningful ways and also VueJS Frameworks to create a web app which could help visualize and analyze people’s spending. For future work, the model structure will be extended to Natural Language Processing by Recurrent Neural Network (RNN).
+    </li>
+
+    <li class="single_project_block">
+      <b>Student Information System</b>.
+      [<code>Node.js</code> | <code>Vue.js</code> | <code>Electron</code>]
+      <div class="project_img_wrapper">
+        <img src="image/projects/ntu-gmba-demo-1.gif"/>
+        <img src="image/projects/ntu-gmba-demo-2.gif"/>
+      </div>
+      <br/>
+      This project aimed to allow the NTU GMBA Office to easily handle administrative tasks, such as entering student background information and academic performances. The features I designed, such as an interactive graph, allows the staff to access data much more conveniently by, for example, selecting a certain age to produce a student career-outcome bar graph. I also developed a portable desktop application with Node.js and Electron, exempting users from installing additional environment dependencies. The application has reduced the GMBA Office’s information retrieval time by 80%.
+    </li>
+
+    <li class="single_project_block">
+      <b>Translator from C to Assembly</b>.
+      [<a href="https://github.com/ken90242/sys-software-c2asm" target="_blank">code</a>]
+      [<code>Java</code>]
+      <div class="project_img_wrapper">
+        <img src="image/projects/c2asm-demo.gif"/>
+      </div>
+      This project was my final project for the class System Programming. I created the function of translating C code into ASM code using Java.
+    </li>
+
+    <li class="single_project_block">
+      <b>Web App for an online forum</b>.
+      [<a href="https://github.com/ken90242/cnode-forum" target="_blank">code</a>][<a href="https://cnodejs-forum.herokuapp.com/" target="_blank">online demo</a>]
+      [<code>Vue.js</code> | <code>JavaScript</code> | <code>HTML5</code>]
+      <br />
+      <div class="project_img_wrapper">
+        <img src="image/projects/cnode-web-app-demo.gif"/>
+      </div>
+      This project aimed to build a mobile web app for an existing forum API. I used pure JavaScript and CSS to mimic some sliding special effects and built the data handling logic using Vue.js
+    </li>
+
+    <li class="single_project_block">
+      <b>TexasHoldem Game</b>.
+      [<a href="https://github.com/ken90242/TexasHoldem" target="_blank">code</a>][<a href="https://texas-holdem-game.herokuapp.com/" target="_blank">online demo</a>]
+      [<code>JavaScript</code> | <code>Vue.js</code> | <code>HTML5</code>]
+      <br />
+      <div class="project_img_wrapper">
+        <img src="image/projects/texas-holdem-demo.gif"/>
+      </div>
+      I developed this project to study Vue.js framework and CSS.
+    </li>
+
+    <li class="single_project_block">
+      <b>Base Conversion Game</b>.
+      [<a href="https://github.com/ken90242/little-base-game" target="_blank">code</a>][<a href="https://little-base-game.onrender.com/" target="_blank">online demo</a>]
+      [<code>JavaScript</code> | <code>HTML5</code>]
+      <br />
+      <div class="project_img_wrapper">
+        <img src="image/projects/base-conversion-demo.gif"/>
+      </div>
+      I developed a simple web app game to help me practice binary conversion. The UI and gaming style referred to 2048 and other QA games. BTW, this project really helps!
+    </li>
+
+    <li class="single_project_block">
+      <b>Item Borrowing System</b>.
+      [<a href="https://github.com/ken90242/itlab_project" target="_blank">code</a>]
+      [<code>PHP</code> | <code>JavaScript</code>]
+      <br/>
+      This project aimed to replace a paper-based item borrowing service with an automatic web service. I used PHP to transfer data and implement the borrowing and stocking logics. I constructed the frontend pages with JavaScript, CSS, and Bootstrap.
+    </li>
+
+    <li class="single_project_block">
+      <b>Website Crawler</b>.
+      [<a href="https://github.com/ken90242/accountingDownloadMission" target="_blank">code</a>]
+      [<code>Python</code> | <code>BeautifulSoup</code>]
+      <br/>
+      This project aimed to help a professor parse a website’s salary data. I used the Python and Beautiful Soup libraries to parse millions of data. I also designed fault-tolerated checking to prevent program crashes due to unstable network connections. 
+    </li>
+  </ul>
+</section>
