@@ -744,6 +744,12 @@ ul.icons li .icon:before {
   opacity: 1.0;
 }
 
+@media screen and (min-width: 1280px) {
+  #header-container {
+    margin-left: 15%;
+  }
+}
+
 
 /* Large */
 
@@ -775,6 +781,7 @@ ul.icons li .icon:before {
   }
   #main {
     margin-left: 3%;
+
     max-width: none;
     padding: 4.5em 3em 3em 3em;
     /*width: calc(100% - 30%);*/
@@ -832,7 +839,7 @@ ul.icons li .icon:before {
   /* Main */
   #main {
 	  padding: 4.5em 4em;
-	  width: 100%;
+	  width: 97%;
   }
   section.home {
     margin: 1em 1.5em 0 0;
@@ -877,7 +884,7 @@ ul.icons li .icon:before {
 
   /* Footer */
   #footer {
-	  padding: 2.25em 1.5em;
+	  padding: .25em 1.5em;
   }
 
   /* Image */
