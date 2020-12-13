@@ -1,20 +1,3 @@
-<style>
-  .single_project_block > .project_img_wrapper {
-    border-style: solid;
-    border-width: 1px;
-    width: 50%;
-    margin-top: 2%;
-    margin-bottom: 2%;
-  }
-
-  .single_project_block > .project_img_wrapper > img {
-    width: 100%;
-  }
-  .single_project_block {
-    margin-bottom: 15%;
-  }
-</style>
-
 <h1>Papers</h1> 
 
 <section>
@@ -36,93 +19,87 @@
   <ul>
     <li class="single_project_block">
       <b>Trend Micro: Virtual Machine Configuration Tool</b>.
-      [<a href="https://downloadcenter.trendmicro.com/index.php?clk=tbl&clkval=4813" target="_blank">demo</a>]
+      [<a href="https://downloadcenter.trendmicro.com/index.php?clk=tbl&clkval=4813" target="_blank">download</a>]
+      [<code>C++</code> | <code>C#</code> | <code>VBScript</code> | <code>Shell</code>]
       <br /> 
-      - C++, C#, VBScript
-      <br /> 
-      - Contribution: TBF
+      A GUI wizard application guides users to build sandboxed virtual machines. My recent delivery feature of that application supports users’ ability to create Linux sandboxed virtual machines. I used C# and Shell Script to enable the wizard application to set up an imported virtual machine automatically, install the required packages, and optimize the sandboxed virtual machine environment. This feature provides users a better chance to detect viruses by providing more sandboxed virtual machine options; now, over 34% of the existing sandboxed virtual machines are Linux-based.
     </li>
 
     <li class="single_project_block">
       <b>Trend Micro: Virus Analyze Integration Core Module</b>.
-      <br /> 
-      - Python
-      <br />
-      - Contribution: TBF
+      [<code>Python</code> | <code>C++</code> | <code>Shell</code>]
+      <br/>
+      I responsible for handling the preprocess procedure when file samples were sent to the system to scan for viruses. One of the features I developed supports decompressing a compressed EGG-format file sample, which is mainly used in Korea. I used C++ to refactor the open-source project and integrate it into the current system’s existing procedure.
     </li>
 
     <li class="single_project_block">
       <b>Diseases Detection in X-Ray images</b>.
-      [<a href="https://github.com/ken90242/ADLxMLDS2017_HTC_Medical/blob/master/report.pdf" target="_blank">pdf</a>]
+      [<a href="https://github.com/ken90242/ADLxMLDS2017_HTC_Medical/blob/master/report.pdf" target="_blank">report</a>]
       [<a href="https://github.com/ken90242/ADLxMLDS2017_HTC_Medical" target="_blank">code</a>]
+      [<code>Python</code> | <code>VGG19</code> | <code>Grad Cam</code>]
       <div class="project_img_wrapper">
-        <img src="image/projects/x-ray-demo.png"/>
+        <img class="project_img" src="image/projects/x-ray-demo.png"/>
       </div>
-      <br /> 
-      - TBF
+      In the capstone project of "Applied Deep learning," I developed a model to detect diseases in x-ray images by using a pre-trained VGG19 model and Grad-CAM to highlight bounding boxes. I assumed that the area, which CNN pays particular attention to while doing classification, should be the lesion's location. I used resampling, weighted loss function, and data augmentation to mitigate data imbalance problem.
     </li>
 
     <li class="single_project_block">
-      <b>Pedestrians Detection Team Project</b>.
-      [<a href="https://github.com/ken90242/lian-tung" target="_blank">link</a>]
+      <b>Pedestrians Detection Project</b>.
+      [<a href="https://github.com/ken90242/lian-tung" target="_blank">details</a>]
+      [<code>Python</code> | <code>JavaScript</code> | <code>Mask RCNN</code>]
       <div class="project_img_wrapper">
-        <img src="https://github.com/ken90242/lian-tung/raw/master/assets/object_detection.gif"/>
+        <img src="image/projects/china-unicom-object-detection.gif"/>
+        <img src="image/projects/china-unicom-annotation-tool-demo.png"/>
       </div>
-      <br />
-      - TBF
+      This project was my internship's capstone project at China Unicom, aiming to detect customer amount using real-time videos. I implemented the model with the state of art model: Mask-RCNN and significantly improved the accuracy performance. Also, I developed an online annotation tool to help users annotate ground truth images and generate JSON format output.
     </li>
 
     <li class="single_project_block">
       <b>Quora-liked Forum</b>.
-      [<a href="#" target="_blank">code</a>]
-      [<a href="#" target="_blank">demo</a>]
-      <br />
-      - TBF
-    </li>
-
-    <li class="single_project_block">
-      <b>Real Time Analyzer + Parser</b>.
-      [<a href="#" target="_blank">code</a>]
-      [<a href="#" target="_blank">demo</a>]
-      <br />
-      - TBF
+      [<a href="https://github.com/ken90242/tellme.ken-han.info" target="_blank">code</a>]
+      [<a href="tellme.ken-han.info" target="_blank">demo</a>]
+      [<code>Python</code> | <code>React.js</code> | <code>Django</code> | <code>WebSocket</code> | <code>Redis</code> | <code>Nginx</code>]
+      <br/>
+      This project aimed to build a forum site like Quora. I Implemented an interactive interface by using React and Redux and the asynchronous AJAX framework Axios. I also created sustainable real-time notifications and instant messaging with WebSocket Reconnecting and Django Channels. I built the API in RESTful format with Django REST framework and MySQL, enabling common CRUD operations. Last, I deployed the website’s frontend and backend on Google Cloud Platform using Nginx to redirect requests.
     </li>
 
     <li class="single_project_block">
       <b>Fintech Contest - Spendings Tracking Chat Bot</b>.
-      [<a href="https://github.com/ken90242/modelClassifier/blob/master/tech.pdf" target="_blank">pdf</a>]
+      [<a href="https://github.com/ken90242/modelClassifier/blob/master/tech.pdf" target="_blank">model</a>]
       [<a href="https://github.com/ken90242/modelClassifier" target="_blank">code</a>]
-      [<a href="#" target="_blank">demo</a>]
+      [<code>Python</code> | <code>Vue.js</code> | <code>Word2Vec</code> | <code>RNN</code>]
       <br />
-      - TBF
+      In the FinTech Hackathon 2017, a financial technology competition in Taiwan, my team received “The Best Team” award for our project customizing Artificial Accounts (Chatbot) which helps keep track of people’s daily expenditures. I used Word2vec from Google’s open source neural net to connect the words inputted by the user in meaningful ways and also VueJS Frameworks to create a web app which could help visualize and analyze people’s spending. For future work, the model structure will be extended to Natural Language Processing by Recurrent Neural Network (RNN).
     </li>
 
     <li class="single_project_block">
-      <b>Student Information Query System</b>.
+      <b>Student Information System</b>.
       [<a href="https://github.com/ken90242/NTU_AACSB_student_DB" target="_blank">code</a>]
       [<a href="doc/aryokee.pdf" target="_blank">demo</a>]
-      <br />
-      - TBF
+      [<code>Node.js</code> | <code>Vue.js</code> | <code>Electron</code>]
+      <br/>
+      This project aimed to allow the NTU GMBA Office to easily handle administrative tasks, such as entering student background information and academic performances. The features I designed, such as an interactive graph, allows the staff to access data much more conveniently by, for example, selecting a certain age to produce a student career-outcome bar graph. I also developed a portable desktop application with Node.js and Electron, exempting users from installing additional environment dependencies. The application has reduced the GMBA Office’s information retrieval time by 80%.
     </li>
 
     <li class="single_project_block">
       <b>Translator from C to Assembly</b>.
       [<a href="https://github.com/ken90242/sys-software-c2asm" target="_blank">code</a>]
-      <br />
+      [<code>Java</code>]
       <div class="project_img_wrapper">
-        <img src="https://github.com/ken90242/sys-software-c2asm/raw/master/demo.gif"/>
+        <img src="image/projects/c2asm-demo.gif"/>
       </div>
-      - TBF
+      This project was my final project for the class System Programming. I created the function of translating C code into ASM code using Java.
     </li>
 
     <li class="single_project_block">
       <b>Web App for an online forum</b>.
       [<a href="https://github.com/ken90242/cnode-forum" target="_blank">code</a>][<a href="https://cnodejs-forum.herokuapp.com/" target="_blank">online demo</a>]
+      [<code>Vue.js</code> | <code>JavaScript</code> | <code>HTML5</code>]
       <br />
       <div class="project_img_wrapper">
-        <img src="https://github.com/ken90242/cnode-forum/raw/master/demo.gif"/>
+        <img src="image/projects/cnode-web-app-demo.gif"/>
       </div>
-      - TBF
+      This project aimed to build a mobile web app for an existing forum API. I used pure JavaScript and CSS to mimic some sliding special effects and built the data handling logic using Vue.js
     </li>
 
     <li class="single_project_block">
@@ -130,30 +107,36 @@
       [<a href="https://github.com/ken90242/TexasHoldem" target="_blank">code</a>][<a href="https://texas-holdem-game.herokuapp.com/" target="_blank">online demo</a>]
       <br />
       <div class="project_img_wrapper">
-        <img src="https://github.com/ken90242/TexasHoldem/raw/master/demo.gif"/>
+        <img src="image/projects/texas-holdem-demo.gif"/>
       </div>
-      - TBF
-    </li>
-
-    <li class="single_project_block">
-      <b>Todo List App</b>.
-      [<a href="https://github.com/ken90242/todoList" target="_blank">code</a>]
-      <br />
-      <div class="project_img_wrapper">
-        <img src="https://github.com/ken90242/todoList/raw/master/demo.gif"/>
-      </div>
-      - TBF
+      I developed this project to study Vue.js framework and CSS.
     </li>
 
     <li class="single_project_block">
       <b>Base Conversion Game</b>.
       [<a href="https://github.com/ken90242/little-base-game" target="_blank">code</a>][<a href="https://little-base-game.herokuapp.com/" target="_blank">online demo</a>]
+      [<code>JavaScript</code> | <code>HTML5</code>]
       <br />
       <div class="project_img_wrapper">
-        <img src="https://github.com/ken90242/little-base-game/raw/master/demo.gif"/>
+        <img src="image/projects/base-conversion-demo.gif"/>
       </div>
-      - TBF
+      I developed a simple web app game to help me practice binary conversion. The UI and gaming style referred to 2048 and other QA games. BTW, this project really helps!
     </li>
 
+    <li class="single_project_block">
+      <b>Item Borrowing System</b>.
+      [<a href="https://github.com/ken90242/itlab_project" target="_blank">code</a>]
+      [<code>PHP</code> | <code>JavaScript</code>]
+      <br/>
+      This project aimed to replace a paper-based item borrowing service with an automatic web service. I used PHP to transfer data and implement the borrowing and stocking logics. I constructed the frontend pages with JavaScript, CSS, and Bootstrap.
+    </li>
+
+    <li class="single_project_block">
+      <b>Website Crawler</b>.
+      [<a href="https://github.com/ken90242/accountingDownloadMission" target="_blank">code</a>]
+      [<code>Python</code> | <code>BeautifulSoup</code>]
+      <br/>
+      This project aimed to help a professor parse a website’s salary data. I used the Python and Beautiful Soup libraries to parse millions of data. I also designed fault-tolerated checking to prevent program crashes due to unstable network connections. 
+    </li>
   </ul>
 </section>
