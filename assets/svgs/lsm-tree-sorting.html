@@ -1,0 +1,24 @@
+<svg viewBox="0 0 680 200" xmlns="http://www.w3.org/2000/svg" font-family="monospace" font-size="13">
+  <defs><marker id="a4" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto">
+    <path d="M0,0 L7,3 L0,6 Z" fill="#0b5fa5"/></marker></defs>
+  <text x="10" y="18" fill="#555">searching for key "Q" inside a sorted SSTable</text>
+
+  <text x="291" y="44" text-anchor="middle" fill="#0b5fa5" font-size="11">&#9312; starts probing from the middle</text>
+  <line x1="291" y1="48" x2="291" y2="68" stroke="#0b5fa5" stroke-width="1.5" marker-end="url(#a4)"/>
+
+  <text x="14" y="84" fill="#0b5fa5" font-size="11">one SSTable</text>
+  <rect x="6" y="88" width="562" height="56" rx="4" fill="none" stroke="#0b5fa5" stroke-width="1.5"/>
+  <g text-anchor="middle">
+    <rect x="14"  y="94" width="70" height="44" rx="3" fill="#f5f5f5" stroke="#1a1a1a" stroke-width="1.5"/><text x="49"  y="121">A</text>
+    <rect x="92"  y="94" width="70" height="44" rx="3" fill="#f5f5f5" stroke="#1a1a1a" stroke-width="1.5"/><text x="127" y="121">C</text>
+    <rect x="170" y="94" width="70" height="44" rx="3" fill="#f5f5f5" stroke="#1a1a1a" stroke-width="1.5"/><text x="205" y="121">F</text>
+    <rect x="248" y="94" width="70" height="44" rx="3" fill="#eaf2fa" stroke="#0b5fa5" stroke-width="1.5"/><text x="283" y="121" fill="#0b5fa5">J</text>
+    <rect x="326" y="94" width="70" height="44" rx="3" fill="#f5f5f5" stroke="#1a1a1a" stroke-width="1.5"/><text x="361" y="121">M</text>
+    <rect x="404" y="94" width="70" height="44" rx="3" fill="#eaf2fa" stroke="#0b5fa5" stroke-width="1.5"/><text x="439" y="121" fill="#0b5fa5">Q</text>
+    <rect x="482" y="94" width="70" height="44" rx="3" fill="#f5f5f5" stroke="#1a1a1a" stroke-width="1.5"/><text x="517" y="121">T</text>
+  </g>
+
+  <line x1="439" y1="172" x2="439" y2="146" stroke="#0b5fa5" stroke-width="1.5" marker-end="url(#a4)"/>
+  <text x="439" y="188" text-anchor="middle" fill="#0b5fa5" font-size="11">&#9313; found</text>
+  <text x="40" y="170" fill="#555" font-size="11">probe middle, halve the range &#8594; O(log N) lookups</text>
+</svg>

@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-0970W95N7Q"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-0970W95N7Q');
+    </script>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>Systems &amp; Research — Hung-Kuang Han</title>
+    <meta name="description" content="Systems and research work by Hung-Kuang Han: distributed storage, matchmaking algorithms, performance engineering, technical deep dives, and a published conference paper.">
+    <link rel="canonical" href="https://ken-han.dev/sys-research.html">
+
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Systems &amp; Research — Hung-Kuang Han">
+    <meta property="og:description" content="Distributed storage, matchmaking algorithms, performance engineering, technical deep dives, and publications by Hung-Kuang Han.">
+    <meta property="og:url" content="https://ken-han.dev/sys-research.html">
+    <meta property="og:image" content="https://ken-han.dev/images/hungkuang.png">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="Systems &amp; Research — Hung-Kuang Han">
+    <meta name="twitter:description" content="Distributed storage, matchmaking algorithms, performance engineering, technical deep dives, and publications by Hung-Kuang Han.">
+    <meta name="twitter:image" content="https://ken-han.dev/images/hungkuang.png">
+
+    <link href="assets/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="icon" href="assets/icons/icon.png">
+    <link rel="stylesheet" href="assets/css/main.css" />
+    <link rel="stylesheet" href="assets/css/customized.css" />
+  </head>
+  <body>
+    <nav class="navbar navbar-default navbar-fixed-top">
+      <div class="container">
+        <div id="header-container" class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="/">Hung-Kuang&nbsp; Han</a>
+        </div>
+        <div id="navbar" class="collapse navbar-collapse">
+          <ul class="nav navbar-nav">
+            <li><a href="/">Home</a></li>
+            <li><a href="cv.html">CV</a></li>
+            <li class="active"><a href="sys-research.html">Systems &amp; Research</a></li>
+            <li><a href="activity.html">Activities</a></li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+
+    <div id="main" class="container">
+      <h1>Papers</h1>
+
+      <section>
+        <ul>
+          <li>
+            <b>A Deep Learning Model for Extracting Live Streaming Video Highlights using Audience Messages</b>.
+            [<a href="https://dl.acm.org/doi/10.1145/3375959.3375965">pdf</a>]
+            <br />
+            <u>Hung-Kuang Han</u>, Yu-Chen Huang, and Chien Chin Chen.<br />
+            in <i><a href="http://www.aiccc.net/">Artificial Intelligence and Cloud Computing Conference (AICCC)</a></i>, 2019
+          </li>
+        </ul>
+      </section>
+
+      <h1>Technical Deep Dives</h1>
+
+      <section>
+        <ul>
+          <li>
+            <div>
+              <b>From Replication to Wide-Stripe Erasure Coding:</b>
+              Why Distributed Storage Got Smarter About Redundancy
+              <a href="docs/wide-stripe-erasure-coding.html">[html]</a>
+            </div>
+            <div class="post-meta">
+              <i>How four trade-offs shape the way modern systems balance space, durability, and recovery</i>, May 2026
+            </div>
+          </li>
+        </ul>
+      </section>
+
+      <h1>Industry Experience</h1>
+
+      <section>
+        <ul>
+          <li class="single_project_block">
+            <b>Curve (CNCF Open Source): Warmup List and Stop Interfaces</b>.
+            [<a href="https://github.com/opencurve/curve/pull/2652">pull request</a>]
+            [<code>C++</code> | <code>Go</code>]
+            <div class="post-meta">Added list, add, and stop interfaces for managing CurveFS warmup jobs, giving users finer control over remote pre-fetch operations</div>
+            <div class="project_img_wrapper">
+              <img src="images/projects/warmup_op_diagram.png"/>
+              <img src="images/projects/warmup_list_add_op.gif"/>
+            </div>
+            <p>
+              CurveFS lazily fetches remote files on first access, introducing latency from network I/O and local writes. I extended the warmup subsystem with three new interfaces: preserving existing job file lists on subsequent adds, canceling in-flight jobs and their downstream tasks, and listing all active warmup jobs per filesystem. These additions give operators direct observability and control over the pre-fetch lifecycle.
+            </p>
+          </li>
+
+          <li class="single_project_block">
+            <b>Riot Games: Team Matchmaking System</b>.
+            [<code>Java</code> | <code>Python</code> | <code>Spring</code>]
+            <div class="post-meta">Redesigned the off-role parity algorithm and validated it against 2M+ real matches before a global rollout</div>
+            <div class="project_img_wrapper">
+              <img src="images/projects/offrole-parity-improve.jpg"/>
+            </div>
+            <b>Released on production</b>: <a href="https://www.leagueoflegends.com/en-us/news/dev/matchmaking-and-champion-select-fall-2022/">Riot News - MATCHMAKING AND CHAMPION SELECT</a>
+            <p>
+              The chart above shows off-role parity rising sharply in the targeted region immediately after rollout. The core problem was that the existing algorithm permitted asymmetric role confidence between opponents, pairing one player's off-role against another's main position and creating a perceivable disadvantage.
+            </p>
+            <p>
+              I redesigned the matching logic to enforce parity by grouping players into role-confidence tiers before pairing them. To manage the queue-time tradeoff, I ran offline simulations against 2M+ historical matches using Python and Databricks, iterating until the parity gain justified the latency cost. The service ran on Java and Spring.
+            </p>
+          </li>
+
+          <li class="single_project_block">
+            <b>Riot Games: League of Legends Client Application</b>.
+            [<code>C++</code> | <code>Java</code> | <code>JavaScript</code> | <code>Ember.js</code>]
+            <div class="post-meta">Shipped the scarce-position indicator with Redis-backed state consistency across distributed matchmaking services</div>
+            <div class="project_img_wrapper">
+              <img src="images/projects/scarce-position-indicator.gif"/>
+            </div>
+            <p>
+              The feature surfaces position scarcity to players during champion select. What appeared to be a straightforward UI change required careful distributed systems work: the scarcity signal is derived from state spread across parties, lobbies, and matchmaking services on separate servers, so inconsistent views between lobby members would undermine the feature's usefulness.
+            </p>
+            <p>
+              I stored the shared state in a Redis-backed cache with periodic source refresh, ensuring all clients in a lobby see a consistent snapshot. The client layer used Ember.js and C++; the backend used Java and Spring.
+            </p>
+          </li>
+
+          <li class="single_project_block">
+            <b>Houzz: Website Performance Monitoring Service</b>.
+            [<code>ReactJS</code> | <code>ExpressJS</code> | <code>JavaScript</code> | <code>k8s/Job</code> | <code>Docker</code> | <code>MongoDB</code>]
+            <div class="post-meta">Lighthouse-based site speed monitoring platform with a React dashboard and a 24/7 k8s-managed daemon tracking hundreds of metrics</div>
+            <div class="project_img_wrapper">
+              <img src="images/projects/houzz-lighthouse-demo.gif"/>
+            </div>
+            <p>
+              The platform has two components: a React + Node.js dashboard for visualizing historical metrics and configuring targets, and a monitoring daemon containerized with Docker and orchestrated as a k8s Job. The daemon runs continuously, collecting Lighthouse scores and Web Vitals across hundreds of Houzz pages and persisting results to MongoDB for trend analysis.
+            </p>
+          </li>
+
+          <li class="single_project_block">
+            <b>Trend Micro: Virtual Machine Configuration Tool</b>.
+            [<a href="https://downloadcenter.trendmicro.com/index.php?clk=tbl&clkval=4813">download</a>]
+            [<code>C++</code> | <code>C#</code> | <code>VBScript</code> | <code>Shell script</code>]
+            <div class="post-meta">Extended the sandbox VM wizard to support Linux VMs; Linux now accounts for 34%+ of all sandboxes</div>
+            <div class="project_img_wrapper">
+              <img src="images/projects/vaipt-begin-demo.gif"/>
+              <img src="images/projects/vaipt-processing-demo.gif"/>
+            </div>
+            <p>
+              I extended the existing C++ and C# wizard to support Linux sandbox creation alongside the existing Windows flow. The feature automates VM import, package installation, and environment hardening via Shell Script, replacing what had been a manual process. Adding Linux coverage meaningfully expanded the malware detection surface; Linux VMs now account for over 34% of active sandboxes.
+            </p>
+          </li>
+
+          <li class="single_project_block">
+            <b>Trend Micro: Virus Analyze Integration Core Module</b>.
+            [<code>Python</code> | <code>C++</code> | <code>Shell</code>]
+            <div class="post-meta">Integrated EGG-format decompression into the malware preprocessing pipeline in C++</div>
+            <p>
+              I owned the preprocessing stage of the malware analysis pipeline, where incoming file samples are triaged before scanning. One key addition was EGG-format decompression support, a Korean archive format that the system had not previously handled. I refactored an open-source C++ EGG library and integrated it into the existing pipeline without disrupting the surrounding flow.
+            </p>
+          </li>
+
+          <li class="single_project_block">
+            <b>Pedestrians Detection Project</b>.
+            [<a href="https://github.com/ken90242/lian-tung">details</a>]
+            <br>[<code>Python</code> | <code>JavaScript</code> | <code>Mask RCNN</code>]
+            <div class="post-meta">Real-time pedestrian counting with Mask-RCNN; built a web-based annotation tool for ground truth labeling</div>
+            <div class="project_img_wrapper">
+              <img src="images/projects/china-unicom-object-detection.gif"/>
+              <img src="images/projects/china-unicom-annotation-tool-demo.png"/>
+            </div>
+            <p>
+              Internship capstone at China Unicom. The task was real-time customer counting from surveillance video; I fine-tuned a Mask-RCNN model and achieved measurable accuracy improvements over the baseline. To support ongoing training data collection, I also built a web-based annotation tool that lets operators label frames and export ground truth in JSON format.
+            </p>
+          </li>
+        </ul>
+      </section>
+
+      <h1>Side Projects</h1>
+
+      <section>
+        <ul>
+          <li class="single_project_block">
+            <b>Course Project: Twitter Data Analysis</b>.
+            [<code>Java</code> | <code>hadoop</code> | <code>kafka</code> | <code>samza</code>]
+            <div class="post-meta">Built a fault-tolerant 25K+ RPS query service on AWS EC2 for 1TB Twitter data using MySQL sharding, replication, and Spark ETL</div>
+            <div class="project_img_wrapper">
+              <img src="images/projects/cc-twitter-prj.jpg"/>
+            </div>
+            <p>
+              Processed 1TB of raw Twitter data using Spark and Scala for ETL, loading into a MySQL backend.
+            </p>
+            <p>
+              To sustain 25K+ RPS under a tight budget, I applied layered optimizations: read-heavy schema design, database parameter tuning, horizontal scaling behind a Jooby load balancer, and read replicas with sharding. Bottlenecks were identified via AWS CloudWatch. In the final phase, the service was migrated to AWS managed services to reduce operational overhead.
+            </p>
+          </li>
+
+          <li class="single_project_block">
+            <b>Course Project: Uber-like ride request matching</b>.
+            [<code>Java</code> | <code>hadoop</code> | <code>kafka</code> | <code>samza</code>]
+            <div class="post-meta">Real-time ride-to-nearest-driver matching at 20K RPS using Kafka and Samza streaming</div>
+            <div class="project_img_wrapper">
+              <img src="images/projects/cc-kafka-prj-frontend.gif"/>
+              <img src="images/projects/cc-kafka-prj-backend.gif"/>
+            </div>
+            <p>
+              The system ingests a continuous stream of ride-request and driver-location update events via Kafka, processes them through a Samza topology, and matches each request to the nearest available driver in real time. End-to-end throughput reaches 20K RPS.
+            </p>
+          </li>
+
+          <li class="single_project_block">
+            <b>Fintech Contest - Spendings Tracking Chat Bot</b>.
+            [<a href="https://github.com/ken90242/modelClassifier/blob/master/tech.pdf">model</a>]
+            [<a href="https://github.com/ken90242/modelClassifier">code</a>]
+            <br>[<code>Python</code> | <code>Vue.js</code> | <code>Word2Vec</code> | <code>RNN</code>]
+            <div class="post-meta">Word2Vec + RNN expense-tracking chatbot with Vue.js dashboard; won Best Team at FinTech Hackathon Taiwan</div>
+            <p>
+              The chatbot helps users log and track daily expenditures through natural-language input, using Word2Vec embeddings to handle paraphrase variation in user messages. A Vue.js frontend visualizes spending patterns over time. The team won “Best Team” at FinTech Hackathon Taiwan 2017.
+            </p>
+          </li>
+
+          <li class="single_project_block">
+            <b>Diseases Detection in X-Ray images</b>.
+            [<a href="https://github.com/ken90242/ADLxMLDS2017_HTC_Medical/blob/master/report.pdf">report</a>]
+            [<a href="https://github.com/ken90242/ADLxMLDS2017_HTC_Medical">code</a>]
+            <br>[<code>Python</code> | <code>VGG19</code> | <code>Grad Cam</code>]
+            <div class="post-meta">VGG19 + Grad-CAM model for localizing diseases in chest X-rays; addressed class imbalance via resampling and weighted loss</div>
+            <div class="project_img_wrapper">
+              <img class="project_img" src="images/projects/x-ray-demo.png"/>
+            </div>
+            <p>
+              Fine-tuned a VGG19 model on a multi-label chest X-ray dataset for disease classification, then applied Grad-CAM to generate localization heatmaps, treating high-attention regions as lesion candidates. The dataset had severe class imbalance, which I addressed through oversampling, class-weighted loss, and data augmentation.
+            </p>
+          </li>
+
+          <li class="single_project_block">
+            <b>Quora-liked Forum</b>.
+            [<a href="https://github.com/ken90242/tellme.ken-han.info">code</a>][<a href="https://tellme.ken-han.info/">online demo</a>]
+            <br>[<code>Python</code> | <code>React.js</code> | <code>Django</code> | <code>WebSocket</code> | <code>Redis</code> | <code>Nginx</code>]
+            <div class="post-meta">Full-stack forum with React/Redux frontend, Django Channels WebSocket notifications, and REST API deployed on GCP</div>
+            <div class="project_img_wrapper">
+              <img src="images/projects/tellme-demo-1.gif"/>
+              <img src="images/projects/tellme-demo-2.gif"/>
+            </div>
+            <p>
+              The frontend is a React + Redux SPA communicating via Axios; real-time notifications and direct messaging run over Django Channels with WebSocket reconnection handling. The REST API is backed by Django REST Framework and MySQL. Deployed on GCP behind Nginx.
+            </p>
+          </li>
+
+          <li class="single_project_block">
+            <b>Course Project: Emergency Social Network</b>.
+            [<a href="https://f21-esn-sa6.herokuapp.com/">online demo</a>]
+            [<code>ExpressJS</code> | <code>Webpack</code> | <code>Heroku</code> | <code>MongoDB</code> | <code>Jest</code>]
+            <div class="post-meta">Mobile web app with real-time group chat and emergency features, built without any frontend framework</div>
+            <div class="project_img_wrapper">
+              <img src="images/projects/fse-login-demo.gif"/>
+              <img src="images/projects/fse-other-functions-demo.gif"/>
+            </div>
+            <p>
+              The app targets users in disaster scenarios and supports real-time public, private, and group messaging, status announcements, and resource search. A hard course constraint prohibited using any frontend framework, so we built our own component model and state management layer from scratch, applying several structural design patterns throughout.
+            </p>
+          </li>
+
+          <li class="single_project_block">
+            <b>Student Information System</b>.
+            [<code>Node.js</code> | <code>Vue.js</code> | <code>Electron</code>]
+            <div class="post-meta">Portable Electron desktop app for NTU GMBA with interactive data visualization; reduced administrative retrieval time by 80%</div>
+            <div class="project_img_wrapper">
+              <img src="images/projects/ntu-gmba-demo-1.gif"/>
+              <img src="images/projects/ntu-gmba-demo-2.gif"/>
+            </div>
+            <p>
+              Built for the NTU GMBA administrative office to replace manual data entry workflows. The app manages student background and academic performance records, with an interactive chart layer; for example, filtering by age cohort to generate career-outcome breakdowns.
+            </p>
+            <p>
+              Packaged as an Electron desktop app so staff can run it without any environment setup. The office reported an 80% reduction in data retrieval time after adoption.
+            </p>
+          </li>
+
+          <li class="single_project_block">
+            <b>Jisell: A voluntary startup iOS app project</b>.
+            [<code>Swift</code>]
+            <div class="post-meta">Built an AR + blockchain gifting iOS app in Swift; published on the App Store and selected for VentureBridge Summer Cohort</div>
+            <div class="project_img_wrapper">
+              <img src="images/projects/jisell-ar.jpg"/>
+              <img src="images/projects/jisell-wallet.gif"/>
+            </div>
+            <p>
+              The app reimagines gift-giving through AR product previews, a blockchain-backed gifting ledger, and on-device object detection. My responsibilities spanned multiple screens and the data pipeline wiring between them in Swift. The product launched on the App Store and was accepted into the VentureBridge Summer Cohort in 2022.
+            </p>
+          </li>
+
+          <li class="single_project_block">
+            <b>Translator from C to Assembly</b>.
+            [<a href="https://github.com/ken90242/sys-software-c2asm">code</a>]
+            [<code>Java</code>]
+            <div class="post-meta">Java-based compiler translating a subset of C to assembly code, built as a System Programming course capstone</div>
+            <div class="project_img_wrapper">
+              <img src="images/projects/c2asm-demo.gif"/>
+            </div>
+            <p>
+              A Java-based translator that converts a subset of C (expressions, control flow, and functions) into x86 assembly. Built as the capstone for the System Programming course.
+            </p>
+          </li>
+
+          <li class="single_project_block">
+            <b>Web App for an online forum</b>.
+            [<a href="https://github.com/ken90242/cnode-forum">code</a>][<a href="https://cnodejs-forum.herokuapp.com/">online demo</a>]
+            <br>[<code>Vue.js</code> | <code>JavaScript</code> | <code>HTML5</code>]
+            <div class="post-meta">Vue.js mobile web app for the CNode forum API with pure-CSS sliding transitions</div>
+            <div class="project_img_wrapper">
+              <img src="images/projects/cnode-web-app-demo.gif"/>
+            </div>
+            <p>
+              A Vue.js mobile web client for the CNode community forum API. The main engineering focus was smooth, native-feeling navigation: inter-page sliding transitions were implemented in pure CSS and JavaScript without any animation library.
+            </p>
+          </li>
+
+          <li class="single_project_block">
+            <b>TexasHoldem Game</b>.
+            [<a href="https://github.com/ken90242/TexasHoldem">code</a>][<a href="https://texas-holdem-game.herokuapp.com/">online demo</a>]
+            <br>[<code>JavaScript</code> | <code>Vue.js</code> | <code>HTML5</code>]
+            <div class="post-meta">Texas Hold'em game built with Vue.js as a hands-on study of component-driven frontend development</div>
+            <div class="project_img_wrapper">
+              <img src="images/projects/texas-holdem-demo.gif"/>
+            </div>
+            <p>
+              A browser-based Texas Hold'em game implementing full hand evaluation, betting rounds, and multi-player state management. Built as a hands-on study of Vue.js reactivity and component design.
+            </p>
+          </li>
+
+          <li class="single_project_block">
+            <b>Base Conversion Game</b>.
+            [<a href="https://github.com/ken90242/little-base-game">code</a>][<a href="https://little-base-game.onrender.com/">online demo</a>]
+            <br>[<code>JavaScript</code> | <code>HTML5</code>]
+            <div class="post-meta">2048-style browser game for practicing binary number conversion, built in vanilla JS</div>
+            <div class="project_img_wrapper">
+              <img src="images/projects/base-conversion-demo.gif"/>
+            </div>
+            <p>
+              A 2048-style game for practicing binary, octal, and hexadecimal conversion. Built entirely in vanilla JS, with no libraries or build tools, as a focused exercise in DOM manipulation and game loop design.
+            </p>
+          </li>
+        </ul>
+      </section>
+    </div>
+
+    <script src="assets/js/jquery.min.js"></script>
+    <script src="assets/bootstrap/js/bootstrap.min.js"></script>
+    <script src="assets/js/jquery.poptrox.min.js"></script>
+    <script type="text/javascript" src="assets/js/main.js"></script>
+  </body>
+</html>

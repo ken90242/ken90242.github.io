@@ -1,0 +1,175 @@
+/*
+  Projects
+*/
+.single_project_block > .project_img_wrapper {
+  display: flex;
+  justify-content: space-around;
+  border-style: solid;
+  border-width: 1px;
+  margin-top: 1%;
+  margin-bottom: 1%;
+  background-color: #b3b3b3;
+}
+
+.project_img_wrapper > img:is(:only-child) {
+  min-height: 100px;
+  max-width: 60%;
+  max-height: 350px;
+}
+
+.project_img_wrapper > img:not(:only-child) {
+  min-height: 100px;
+  max-width: 48%;
+  max-height: 400px;
+}
+
+.single_project_block {
+  margin-bottom: 5%;
+}
+
+.about-company-logo {
+  max-height: 28px;
+}
+
+.post-meta {
+  margin-top: 0.25em;
+  font-size: 14px !important;
+  color: rgb(51, 51, 51);
+  line-height: 1.5;
+}
+
+/*
+  Activities: widen the gap between the photo and its text without
+  letting the text column wrap below the image.
+*/
+@media (min-width: 737px) {
+  #main .cell-image {
+    margin-right: 1.8em;
+  }
+  #main .cell-text-photo {
+    width: 47%;
+  }
+}
+
+/*
+  Navbar: drop the brand and menu items to the bottom edge,
+  keeping them on a shared baseline.
+*/
+@media (min-width: 768px) {
+  .navbar-default .navbar-brand {
+    margin-top: 8px;
+    height: 40px;
+    padding-top: 10px;
+    padding-bottom: 10px;
+  }
+  .navbar-nav > li {
+    padding-top: 8px;
+    padding-bottom: 0;
+  }
+  .navbar-nav > li > a {
+    padding-top: 10px;
+    padding-bottom: 10px;
+  }
+}
+
+/*
+  Active menu item: a coloured label instead of the default grey block
+  that left an ugly empty band above the text.
+*/
+.navbar-default .navbar-nav > .active > a,
+.navbar-default .navbar-nav > .active > a:hover,
+.navbar-default .navbar-nav > .active > a:focus {
+  background-color: transparent;
+  color: #3355cc;
+}
+
+/* The underline tab only makes sense in the horizontal desktop menu. */
+@media (min-width: 768px) {
+  .navbar-default .navbar-nav > .active > a,
+  .navbar-default .navbar-nav > .active > a:hover,
+  .navbar-default .navbar-nav > .active > a:focus {
+    box-shadow: inset 0 -3px 0 0 #3355cc;
+  }
+}
+
+/* In the stacked mobile menu, mark the active item with a tinted row. */
+@media (max-width: 767px) {
+  .navbar-default .navbar-nav > .active > a,
+  .navbar-default .navbar-nav > .active > a:hover,
+  .navbar-default .navbar-nav > .active > a:focus {
+    background-color: #eef1fb;
+  }
+}
+
+/* Cancel Bootstrap's ±15px compensating margins on navbar items (they were
+   designed to offset the default 15px container padding; with 3em padding
+   instead, zeroing them keeps brand and nav flush with the content column). */
+.navbar > .container .navbar-brand {
+  margin-left: 0;
+  padding-left: 0;
+}
+.navbar-right {
+  margin-right: 0;
+}
+
+/* Center both the navbar content and #main as one identical column, so
+   they share the same left/right edges. Bootstrap's .container sets a
+   fixed width per breakpoint; an explicit width here overrides it. */
+#main,
+.navbar .container {
+  width: 100%;
+  max-width: 65em;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 3em;
+  padding-right: 3em;
+}
+
+/* At desktop, replace Bootstrap's float-based navbar layout with flexbox
+   so the brand and nav items reliably share the same left/right edges as
+   the #main content column (floats produced an unexpected 96px drift). */
+@media (min-width: 768px) {
+  .navbar .container {
+    display: flex;
+    align-items: center;
+  }
+  .navbar-header,
+  #header-container {
+    float: none;
+    margin-left: 0;
+  }
+  .navbar .navbar-collapse {
+    display: flex !important;
+    flex: 1;
+    justify-content: flex-end;
+    align-items: center;
+    padding-bottom: 0;
+  }
+  .navbar .navbar-collapse .navbar-nav {
+    float: none;
+    margin: 0;
+  }
+}
+
+/* Home header: avatar and intro sit side by side, vertically centered. */
+#home {
+  display: flex;
+  align-items: center;
+  gap: 1.5em;
+}
+
+#home .img-block {
+  float: none;
+  margin: 0;
+}
+
+#home p {
+  margin: 0;
+}
+
+@media screen and (max-width: 736px) {
+  #home {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

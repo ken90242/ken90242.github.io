@@ -1,0 +1,887 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LSM-Tree · Interactive</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0c1016; --bg2:#10161f; --panel:#141c27; --panel2:#19222f;
+    --line:#27323f; --line2:#33414f; --text:#cdd9e6; --muted:#6e8095; --dim:#4a5a6c;
+    --mem:#4ade80; --mem-glow:rgba(74,222,128,.35);
+    --wal:#fbbf24; --sst:#5aa9ff; --del:#fb6f6f; --comp:#c08bff;
+    --mono:'IBM Plex Mono',monospace; --sans:'IBM Plex Sans',sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  :root{--sbw:280px}
+  html,body{height:100%}
+  body{font-family:var(--sans);background:radial-gradient(1200px 700px at 80% -10%,rgba(90,169,255,.07),transparent 60%),radial-gradient(900px 600px at -10% 110%,rgba(192,139,255,.06),transparent 55%),var(--bg);color:var(--text);line-height:1.5;-webkit-font-smoothing:antialiased;height:100vh;overflow:hidden}
+  .wrap{height:100vh;display:flex;flex-direction:column;gap:11px;padding:18px 20px;padding-right:calc(var(--sbw) + 36px);max-width:none;margin:0;overflow:hidden}
+  header{flex:none}
+  .eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:.32em;text-transform:uppercase;color:var(--sst);margin-bottom:6px;display:flex;align-items:center;gap:10px}
+  .eyebrow::before{content:"";width:26px;height:1px;background:var(--sst);opacity:.6}
+  h1{font-size:clamp(22px,3vw,30px);font-weight:700;letter-spacing:-.02em;line-height:1.02}
+  h1 .lite{color:var(--muted);font-weight:400}
+
+  /* fixed right sidebar */
+  .sidebar{position:fixed;top:0;right:0;bottom:0;width:var(--sbw);background:linear-gradient(180deg,var(--panel),var(--bg2));border-left:1px solid var(--line);padding:20px 16px;overflow-y:auto;z-index:50;display:flex;flex-direction:column;gap:9px}
+  .sb-title{font-family:var(--mono);font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--comp);font-weight:600}
+  .sb-sub{font-family:var(--mono);font-size:10px;color:var(--dim);letter-spacing:.08em;margin-bottom:6px}
+  .scn-list{display:flex;flex-direction:column;gap:8px}
+  .scn{text-align:left;align-items:flex-start;flex-direction:column;gap:3px;padding:10px 12px;background:var(--panel2);border:1px solid var(--line2);width:100%}
+  .scn:hover:not(:disabled){border-color:var(--comp);transform:translateY(-1px)}
+  .scn .t{font-weight:600;font-size:12px;color:var(--text);display:flex;gap:7px;align-items:center}
+  .scn .t b{color:var(--comp);font-weight:700}
+  .scn .d{font-family:var(--sans);font-size:11px;color:var(--muted);font-weight:400;letter-spacing:0;line-height:1.35}
+
+  .controls{flex:none;background:linear-gradient(180deg,var(--panel),var(--bg2));border:1px solid var(--line);border-radius:12px;padding:12px 14px;display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end}
+  .field{display:flex;flex-direction:column;gap:5px}
+  .field label{font-family:var(--mono);font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--dim)}
+  input[type=text]{font-family:var(--mono);font-size:14px;background:#0b1118;border:1px solid var(--line2);color:var(--text);padding:9px 12px;border-radius:9px;width:110px;outline:none;transition:.18s}
+  input[type=text]:focus{border-color:var(--sst);box-shadow:0 0 0 3px rgba(90,169,255,.15)}
+  input[type=text].typing{border-color:var(--sst);box-shadow:0 0 0 3px rgba(90,169,255,.18);background:#0c141d}
+  .field label{transition:.2s}
+  .field label.lit-put{color:var(--mem)}
+  .field label.lit-get{color:var(--sst)}
+  .field label.lit-del{color:var(--del)}
+  .b-put.active{border-color:var(--mem);box-shadow:0 0 0 2px var(--mem),0 0 18px var(--mem-glow)}
+  .b-get.active{border-color:var(--sst);box-shadow:0 0 0 2px var(--sst),0 0 18px rgba(90,169,255,.4)}
+  .b-del.active{border-color:var(--del);box-shadow:0 0 0 2px var(--del),0 0 18px rgba(251,111,111,.4)}
+  @keyframes opPulse{0%{transform:scale(1)}45%{transform:scale(1.13)}100%{transform:scale(1)}}
+  .op-pulse{animation:opPulse .5s ease}
+  .btns{display:flex;gap:8px;flex-wrap:wrap}
+  button{font-family:var(--mono);font-size:12.5px;font-weight:500;letter-spacing:.04em;cursor:pointer;padding:9px 14px;border-radius:9px;border:1px solid var(--line2);background:var(--panel2);color:var(--text);transition:.16s;display:inline-flex;align-items:center;gap:7px}
+  button:hover:not(:disabled){border-color:var(--sst);transform:translateY(-1px)}
+  button:disabled{opacity:.4;cursor:not-allowed}
+  button .dot{width:7px;height:7px;border-radius:50%}
+  .b-put .dot{background:var(--mem)} .b-put:hover:not(:disabled){border-color:var(--mem)}
+  .b-get .dot{background:var(--sst)}
+  .b-del .dot{background:var(--del)} .b-del:hover:not(:disabled){border-color:var(--del)}
+  .b-ghost{background:transparent;color:var(--muted)}
+  .spacer{flex:1}
+
+  /* RACE */
+  .race{position:fixed;top:50%;left:calc(50% - var(--sbw)/2);transform:translate(-50%,-50%);width:min(680px,calc(100vw - var(--sbw) - 80px));z-index:160;border-color:var(--comp);box-shadow:0 30px 90px rgba(0,0,0,.8),0 0 0 1px var(--line)}
+  body.modal::before{content:"";position:fixed;inset:0;background:rgba(4,7,11,.74);backdrop-filter:blur(1.5px);z-index:150}
+  .race-hd{font-family:var(--mono);font-size:12px;color:var(--text);margin-bottom:16px;letter-spacing:.04em}
+  .race-hd b{color:var(--comp)}
+  .lanes{display:flex;flex-direction:column;gap:18px}
+  .lane-top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}
+  .lane-name{font-family:var(--mono);font-size:12px;font-weight:600}
+  .lane-cost{font-family:var(--mono);font-size:13px;color:var(--muted)}
+  .lane-cost b{font-size:18px}
+  .track{position:relative;height:30px;background:#0a0f15;border:1px solid var(--line);border-radius:8px;display:flex;overflow:hidden;margin-bottom:8px}
+  .slot{flex:1;border-right:1px solid #161e29;transition:background .2s}
+  .slot:last-child{border-right:none}
+  .slot.lsm.w{background:rgba(74,222,128,.32)}
+  .slot.bt.w{background:rgba(251,111,111,.30)}
+  .head{position:absolute;top:-3px;bottom:-3px;width:3px;border-radius:3px;transition:left .32s cubic-bezier(.4,0,.2,1)}
+  .head.lsm{background:var(--mem);box-shadow:0 0 12px var(--mem)}
+  .head.bt{background:var(--del);box-shadow:0 0 12px var(--del)}
+  .head .lbl{position:absolute;top:-16px;left:50%;transform:translateX(-50%);font-family:var(--mono);font-size:9px;white-space:nowrap;color:inherit}
+  .lane-bar{height:7px;background:#0a0f15;border-radius:4px;overflow:hidden}
+  .lane-bar > i{display:block;height:100%;width:0;border-radius:4px;background:var(--mem);transition:width .32s}
+  .lane-bar > i.bad{background:var(--del)}
+  .race-result{font-family:var(--mono);font-size:13px;color:var(--text);margin-top:16px;padding-top:14px;border-top:1px dashed var(--line);min-height:20px}
+  .scale{margin-top:14px;padding:12px 13px;border:1px solid var(--wal);border-radius:10px;background:rgba(251,191,36,.06)}
+  .scale-h{font-family:var(--mono);font-size:12px;color:var(--wal);margin-bottom:11px;line-height:1.4}
+  .scale-row{display:flex;align-items:center;gap:10px;margin-bottom:9px}
+  .scale-row:last-child{margin-bottom:0}
+  .scale-lbl{font-family:var(--mono);font-size:11.5px;font-weight:600;width:130px;flex:none}
+  .scale-track{flex:1;height:16px;background:#0a0f15;border-radius:5px;overflow:hidden}
+  .scale-track > i{display:block;height:100%;background:var(--mem);border-radius:5px;transition:width 1s ease}
+  .scale-track > i.bad{background:var(--del)}
+  .scale-t{font-family:var(--mono);font-size:13px;font-weight:700;width:96px;text-align:right;flex:none}
+  .race-result b{color:var(--mem)} .race-result .x{color:var(--del);font-size:17px}
+
+  .stage{display:grid;grid-template-columns:280px 1fr;gap:16px;flex:1;min-height:0}
+  .stage > div{display:flex;flex-direction:column;min-height:0}
+  .col-title{font-family:var(--mono);font-size:10.5px;letter-spacing:.22em;text-transform:uppercase;color:var(--muted);margin-bottom:9px;display:flex;align-items:center;gap:9px;flex:none}
+  .col-title.sm{font-size:10px;letter-spacing:.14em;margin:13px 0 7px}
+  .col-title.sm:first-child{margin-top:0}
+  .col-title .pill{font-size:9.5px;padding:2px 8px;border-radius:20px;border:1px solid var(--line2);color:var(--dim)}
+  .panel{background:linear-gradient(180deg,var(--panel),var(--bg2));border:1px solid var(--line);border-radius:13px;padding:14px;flex:1;min-height:0;overflow-y:auto}
+  .hint{font-size:11px;color:var(--dim);margin-top:11px;line-height:1.45;border-top:1px dashed var(--line);padding-top:10px}
+
+  .memtable{border:1px solid var(--line2);border-radius:12px;padding:13px;background:rgba(74,222,128,.04);transition:.25s}
+  .memtable.pulse{box-shadow:0 0 0 2px var(--mem),0 0 30px var(--mem-glow);border-color:var(--mem);transform:scale(1.015)}
+  .memtable.found{box-shadow:0 0 0 2px var(--mem),0 0 34px var(--mem-glow)}
+  .memtable.checking{box-shadow:0 0 0 2px var(--mem),0 0 34px var(--mem-glow);transform:scale(1.03)}
+  .memtable.missed{opacity:.5}
+  .memtable.dim{opacity:.3}
+  .mt-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+  .mt-head .title{font-family:var(--mono);font-size:12.5px;font-weight:600;color:var(--mem);display:flex;align-items:center;gap:7px}
+  .mt-head .cap{font-family:var(--mono);font-size:10.5px;color:var(--muted)}
+  .fill{height:5px;background:#0a0f15;border-radius:4px;overflow:hidden;margin-bottom:11px}
+  .fill > i{display:block;height:100%;background:linear-gradient(90deg,var(--mem),#86efac);border-radius:4px;transition:width .35s ease}
+  .entries{display:flex;flex-direction:column;gap:5px;min-height:24px}
+  .empty-note{font-family:var(--mono);font-size:11px;color:var(--dim);padding:6px 2px}
+  .entry{font-family:var(--mono);font-size:12.5px;display:flex;align-items:center;gap:8px;background:#0b121a;border:1px solid var(--line);border-radius:8px;padding:7px 10px;animation:slideIn .3s ease}
+  .entry.fresh{animation:landGreen .7s ease}
+  @keyframes landGreen{0%{background:var(--mem);color:#06121f}100%{background:#0b121a}}
+  .entry .key{color:var(--text);font-weight:600;min-width:16px}
+  .entry .arrow{color:var(--dim)} .entry .val{color:var(--mem)}
+  .entry.tomb{border-color:rgba(251,111,111,.3);background:rgba(251,111,111,.06)}
+  .entry.tomb.fresh{animation:landRed .7s ease}
+  @keyframes landRed{0%{background:var(--del);color:#1a0808}100%{background:rgba(251,111,111,.06)}}
+  .entry.tomb .key{color:var(--del);text-decoration:line-through;text-decoration-color:rgba(251,111,111,.6)}
+  .entry.tomb .val{color:var(--del)}
+  .entry .seq{margin-left:auto;font-size:9.5px;color:var(--dim)}
+  @keyframes slideIn{from{opacity:0;transform:translateY(-5px)}to{opacity:1;transform:none}}
+
+  .wal-log{font-family:var(--mono);font-size:11.5px;background:#0a0f15;border:1px solid var(--line);border-radius:10px;padding:10px;height:84px;overflow-y:auto;display:flex;flex-direction:column-reverse;gap:3px;transition:.2s}
+  .wal-log.flash{border-color:var(--wal);box-shadow:0 0 0 2px rgba(251,191,36,.4),0 0 22px rgba(251,191,36,.25)}
+  .wal-log .ln{color:var(--wal);opacity:.92;white-space:nowrap}
+  .wal-log .ln:first-child{animation:walIn .5s ease}
+  @keyframes walIn{from{background:rgba(251,191,36,.25)}to{background:transparent}}
+  .wal-log .ln .op{color:var(--muted)}
+  .wal-empty{color:var(--dim)}
+
+  .level{margin-bottom:11px;border:1px solid var(--line);border-radius:12px;padding:11px 12px;background:var(--panel);transition:.25s}
+  .level:last-child{margin-bottom:0}
+  .level.pulse{box-shadow:0 0 0 2px var(--comp),0 0 26px rgba(192,139,255,.28);border-color:var(--comp)}
+  .level.scan{border-color:var(--sst)}
+  .level-ellipsis{text-align:center;font-family:var(--mono);font-size:10px;color:var(--dim);letter-spacing:.05em;margin:4px 0 11px;padding:7px;border:1px dashed var(--line2);border-radius:10px;background:repeating-linear-gradient(45deg,transparent,transparent 6px,rgba(255,255,255,.012) 6px,rgba(255,255,255,.012) 12px)}
+  .level-head{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+  .level-tag{font-family:var(--mono);font-weight:600;font-size:13px}
+  .level-meta{font-family:var(--mono);font-size:10.5px;color:var(--muted)}
+  .level-bar{flex:1;height:4px;background:#0a0f15;border-radius:3px;overflow:hidden}
+  .level-bar > i{display:block;height:100%;background:var(--sst);transition:width .35s}
+  .level-bar > i.over{background:var(--comp)}
+  .ssts{display:flex;gap:9px;flex-wrap:wrap;min-height:30px}
+  .sst{position:relative;border:1px solid var(--line2);border-radius:9px;padding:8px 9px;min-width:118px;background:linear-gradient(180deg,rgba(90,169,255,.07),rgba(90,169,255,.02));transition:.2s;animation:pop .3s ease}
+  @keyframes pop{from{opacity:0;transform:scale(.9)}to{opacity:1;transform:none}}
+  .sst.hl{box-shadow:0 0 0 2px var(--sst),0 0 24px rgba(90,169,255,.5);border-color:var(--sst);transform:translateY(-3px)}
+  .sst.found{box-shadow:0 0 0 2px var(--mem),0 0 26px var(--mem-glow);border-color:var(--mem);transform:translateY(-3px)}
+  .sst.skip,.sst.absent{opacity:.34;border-style:dashed;filter:grayscale(.6)}
+  .sst.maybe{box-shadow:0 0 0 2px var(--wal),0 0 20px rgba(251,191,36,.3);border-color:var(--wal)}
+  .sst.checking{box-shadow:0 0 0 2px var(--sst),0 0 36px rgba(90,169,255,.7);border-color:var(--sst);transform:translateY(-4px) scale(1.06);z-index:3}
+  .sst.missed{opacity:.4;filter:grayscale(.55)}
+  .sst.dim{opacity:.24;filter:grayscale(.65)}
+  .badge{position:absolute;top:6px;right:8px;font-family:var(--mono);font-size:8.5px;font-weight:600;padding:2px 6px;border-radius:5px;letter-spacing:.04em;z-index:4}
+  .badge.scan{background:rgba(90,169,255,.22);color:var(--sst)}
+  .badge.miss{background:rgba(251,111,111,.2);color:var(--del)}
+  .badge.hit{background:rgba(74,222,128,.22);color:var(--mem)}
+  .badge.skip{background:rgba(110,128,149,.22);color:var(--muted)}
+  #mtBadge .badge{position:static;display:inline-block;margin-left:6px}
+  /* status HUD */
+  .hud{flex:none;display:flex;align-items:center;gap:11px;margin:0;padding:10px 14px;border-radius:11px;border:1px solid var(--line2);background:var(--panel);font-family:var(--mono);font-size:13px;transition:.2s;animation:slideIn .25s ease}
+  .hud .hud-ico{font-size:17px;line-height:1}
+  .hud b{font-weight:700}
+  .hud .kk{font-weight:700;background:#0b1118;border:1px solid var(--line2);padding:1px 9px;border-radius:6px;color:var(--text)}
+  .hud.search{border-color:var(--sst);background:linear-gradient(180deg,rgba(90,169,255,.12),var(--panel));color:var(--sst)}
+  .hud.found{border-color:var(--mem);background:linear-gradient(180deg,rgba(74,222,128,.13),var(--panel));color:var(--mem)}
+  .hud.miss{border-color:var(--del);background:linear-gradient(180deg,rgba(251,111,111,.13),var(--panel));color:var(--del)}
+  .hud.compact{border-color:var(--comp);background:linear-gradient(180deg,rgba(192,139,255,.13),var(--panel));color:var(--comp)}
+  .hud.op{border-color:var(--line2);background:var(--panel);color:var(--text)}
+  /* compaction merge states */
+  .sst.merging{box-shadow:0 0 0 2px var(--comp),0 0 32px rgba(192,139,255,.6);border-color:var(--comp);transform:translateY(-4px) scale(1.05);z-index:3}
+  .sst.newmerged{box-shadow:0 0 0 2px var(--mem),0 0 28px var(--mem-glow);border-color:var(--mem);animation:popMerge .5s ease}
+  @keyframes popMerge{0%{opacity:0;transform:scale(.8) translateY(8px)}100%{opacity:1;transform:none}}
+  .badge.comp{background:rgba(192,139,255,.22);color:var(--comp)}
+  /* the key we're currently searching for */
+  .srow.qrow{background:rgba(251,191,36,.16);border-radius:4px;outline:1px solid rgba(251,191,36,.5);padding:1px 3px;margin:-1px -3px}
+  .entry.qrow{outline:2px solid rgba(251,191,36,.7);box-shadow:0 0 14px rgba(251,191,36,.25)}
+  .sst-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:6px}
+  .sst-id{font-family:var(--mono);font-size:10.5px;color:var(--sst);font-weight:600}
+  .sst-range{font-family:var(--mono);font-size:9.5px;color:var(--muted)}
+  .sst-rows{display:flex;flex-direction:column;gap:3px}
+  .srow{font-family:var(--mono);font-size:11px;display:flex;gap:6px;align-items:baseline}
+  .srow .k{color:var(--text);font-weight:600} .srow .v{color:var(--sst)}
+  .srow.tomb .k{color:var(--del);text-decoration:line-through;text-decoration-color:rgba(251,111,111,.55)}
+  .srow.tomb .v{color:var(--del)}
+  /* bloom strip */
+  .bf{display:flex;gap:3px;margin-top:8px;padding-top:7px;border-top:1px solid var(--line)}
+  .bf i{width:10px;height:10px;border-radius:2px;background:#1b2530;transition:.15s}
+  .bf i.on{background:rgba(90,169,255,.5)}
+  .bf i.q{transform:scale(1.35);outline:2px solid var(--wal);outline-offset:1px;z-index:1}
+  .bf i.q.on{background:var(--mem)}            /* queried bit that IS set */
+  .bf i.q:not(.on){background:var(--del);outline-color:var(--del)}  /* queried bit that is 0 */
+  .bf-tag{font-family:var(--mono);font-size:8px;letter-spacing:.1em;color:var(--dim);margin-top:6px}
+  .bf-why{font-family:var(--mono);font-size:9.5px;line-height:1.35;margin-top:6px;padding:5px 7px;border-radius:6px;background:#0a0f15;border:1px solid var(--line)}
+  .bf-why.maybe{color:var(--mem);border-color:rgba(74,222,128,.4)}
+  .bf-why.absent{color:var(--del);border-color:rgba(251,111,111,.4)}
+  .bf-why.check{color:var(--wal);border-color:rgba(251,191,36,.4)}
+  .verdict{position:absolute;top:6px;right:8px;font-family:var(--mono);font-size:8.5px;font-weight:600;padding:2px 5px;border-radius:5px;letter-spacing:.05em}
+  .verdict.maybe{background:rgba(251,191,36,.18);color:var(--wal)}
+  .verdict.absent{background:rgba(251,111,111,.18);color:var(--del)}
+
+  .explain{margin:0;flex:none}
+  .foldbtn{font-family:var(--mono);font-size:11px;font-weight:600;padding:5px 11px;border-radius:7px;border:1px solid var(--line2);background:var(--panel2);color:var(--muted);cursor:pointer;transition:.15s}
+  .foldbtn:hover{border-color:var(--sst);color:var(--text)}
+  .explain.folded .log{display:none}
+  body:not(.running) .explain.folded .foldbtn{animation:foldBlink 1.5s ease-in-out infinite}
+  @keyframes foldBlink{0%,100%{box-shadow:0 0 0 0 rgba(251,191,36,0);border-color:var(--line2);color:var(--muted)}50%{box-shadow:0 0 0 4px rgba(251,191,36,.22);border-color:var(--wal);color:var(--wal)}}
+  .explain-bar{display:flex;align-items:center;margin-bottom:9px}
+  .explain-cap{font-family:var(--mono);font-size:10.5px;letter-spacing:.22em;text-transform:uppercase;color:var(--dim)}
+  .explain-bar .cb-spacer{flex:1}
+  .pausebtn{font-family:var(--mono);font-size:11px;font-weight:600;padding:5px 12px;border-radius:7px;border:1px solid var(--line2);background:var(--panel2);color:var(--muted);cursor:pointer;transition:.15s}
+  .pausebtn:hover{border-color:var(--sst);color:var(--text)}
+  .pausebtn.held{border-color:var(--wal);color:var(--wal);background:rgba(251,191,36,.12);animation:pauseGlow 1.1s ease-in-out infinite}
+  @keyframes pauseGlow{0%,100%{box-shadow:0 0 0 0 rgba(251,191,36,.25)}50%{box-shadow:0 0 0 4px rgba(251,191,36,.18)}}
+  .log .c-pause{color:var(--wal);font-weight:600}
+  /* lightbox: dim everything except the explanation + pause button while paused */
+  #lightbox{position:fixed;inset:0;background:rgba(4,7,11,.74);z-index:200;backdrop-filter:blur(1.5px);animation:lbIn .2s ease}
+  @keyframes lbIn{from{opacity:0}to{opacity:1}}
+  .explain.spotlit{position:relative;z-index:201}
+  .explain.spotlit .log{box-shadow:0 0 0 2px var(--wal),0 0 60px rgba(0,0,0,.85);border-color:var(--wal)}
+  .pausecard{font-family:var(--sans);font-size:14.5px;line-height:1.62;color:var(--text);padding:16px 18px;border:1px solid var(--wal);border-left:4px solid var(--wal);border-radius:11px;background:rgba(251,191,36,.06)}
+  .pausecard b{color:var(--wal)}
+  .explain.spotlit .pausecard{box-shadow:0 0 0 2px var(--wal),0 0 60px rgba(0,0,0,.85)}
+  .explain.spotlit .pausebtn{position:relative;z-index:201}
+  /* eye-catching whole-row blink on action change */
+  .controls.cf-put{animation:rowFlashPut .85s ease}
+  .controls.cf-get{animation:rowFlashGet .85s ease}
+  .controls.cf-del{animation:rowFlashDel .85s ease}
+  @keyframes rowFlashPut{0%,100%{box-shadow:none;border-color:var(--line)}25%,75%{box-shadow:0 0 0 2px var(--mem),0 0 34px var(--mem-glow);border-color:var(--mem)}50%{box-shadow:none;border-color:var(--line)}}
+  @keyframes rowFlashGet{0%,100%{box-shadow:none;border-color:var(--line)}25%,75%{box-shadow:0 0 0 2px var(--sst),0 0 34px rgba(90,169,255,.45);border-color:var(--sst)}50%{box-shadow:none;border-color:var(--line)}}
+  @keyframes rowFlashDel{0%,100%{box-shadow:none;border-color:var(--line)}25%,75%{box-shadow:0 0 0 2px var(--del),0 0 34px rgba(251,111,111,.45);border-color:var(--del)}50%{box-shadow:none;border-color:var(--line)}}
+  .log{font-family:var(--mono);font-size:12px;padding:11px 14px;height:118px;overflow-y:auto;display:flex;flex-direction:column;gap:5px;background:rgba(255,255,255,.015);border:1px solid var(--line);border-radius:11px;line-height:1.45}
+  .log .row{display:flex;gap:9px;animation:slideIn .2s ease}
+  .log .row .p{color:var(--dim);user-select:none}
+  .c-info{color:var(--text)} .c-mem{color:var(--mem)} .c-wal{color:var(--wal)}
+  .c-comp{color:var(--comp)} .c-find{color:var(--mem);font-weight:600} .c-miss{color:var(--del)} .c-muted{color:var(--muted)}
+  .c-head{color:var(--comp);font-weight:600;border-top:1px solid var(--line);padding-top:6px;margin-top:2px}
+
+  .legend{flex:none;display:flex;flex-wrap:wrap;gap:14px;margin:0;font-family:var(--mono);font-size:10.5px;color:var(--muted)}
+  .legend span{display:flex;align-items:center;gap:7px}
+  .legend i{width:11px;height:11px;border-radius:3px;display:inline-block}
+
+  /* OVERLAYS */
+  .flyer{position:fixed;z-index:99;font-family:var(--mono);font-size:12px;display:flex;align-items:center;gap:8px;background:#0b121a;border:1px solid var(--line2);border-radius:9px;padding:7px 11px;box-shadow:0 10px 34px rgba(0,0,0,.6);pointer-events:none}
+  .flyer.put{border-color:var(--mem);box-shadow:0 10px 34px rgba(0,0,0,.6),0 0 20px var(--mem-glow)}
+  .flyer.del{border-color:var(--del);box-shadow:0 10px 34px rgba(0,0,0,.6),0 0 20px rgba(251,111,111,.4)}
+  .flyer.get{border-color:var(--sst);box-shadow:0 10px 34px rgba(0,0,0,.6),0 0 20px rgba(90,169,255,.4)}
+  .fc-op{font-size:9px;font-weight:700;letter-spacing:.1em;padding:2px 6px;border-radius:5px}
+  .fc-op.put{background:rgba(74,222,128,.2);color:var(--mem)}
+  .fc-op.del{background:rgba(251,111,111,.2);color:var(--del)}
+  .fc-op.get{background:rgba(90,169,255,.2);color:var(--sst)}
+  .fc-kv{color:var(--text)} .fc-kv b{color:var(--text);font-weight:700} .fc-arr{color:var(--dim)}
+  /* flush block animation */
+  .flyblock{position:fixed;z-index:99;display:flex;flex-direction:column;gap:3px;background:#0b121a;border:1px solid var(--wal);border-radius:9px;padding:8px;box-shadow:0 14px 44px rgba(0,0,0,.7),0 0 26px rgba(251,191,36,.4);pointer-events:none}
+  .fb-cap{font-family:var(--mono);font-size:8.5px;letter-spacing:.1em;color:var(--wal);margin-bottom:2px}
+  .fb-row{font-family:var(--mono);font-size:11px;color:var(--mem);background:#10171f;border:1px solid var(--line);border-radius:6px;padding:4px 8px}
+  .fb-row.tomb{color:var(--del)}
+  .probe{position:fixed;z-index:98;transform:translate(-50%,-100%);transition:left .42s cubic-bezier(.4,0,.2,1),top .42s cubic-bezier(.4,0,.2,1),opacity .25s;opacity:0;pointer-events:none;font-family:var(--mono);font-size:12px;font-weight:700;padding:6px 12px;border-radius:8px;background:var(--sst);color:#06121f;white-space:nowrap;box-shadow:0 6px 20px rgba(0,0,0,.5)}
+  .probe::after{content:"";position:absolute;left:50%;bottom:-5px;transform:translateX(-50%);border:5px solid transparent;border-top-color:var(--sst)}
+  .probe.show{opacity:1}
+  .probe.hit{background:var(--mem)}.probe.hit::after{border-top-color:var(--mem)}
+  .probe.miss{background:var(--del)}.probe.miss::after{border-top-color:var(--del)}
+
+  *::-webkit-scrollbar{width:8px;height:8px}
+  *::-webkit-scrollbar-thumb{background:var(--line2);border-radius:4px}
+  *::-webkit-scrollbar-track{background:transparent}
+  /* ---------- mobile ---------- */
+  @media(max-width:820px){
+    html,body{height:auto;min-height:100%;overflow-y:auto}
+    body{display:flex;flex-direction:column;padding:0}
+    .sidebar{order:1;position:static;top:auto;right:auto;bottom:auto;width:auto;height:auto;border-left:none;border-bottom:1px solid var(--line);padding:12px 14px;gap:6px}
+    .sb-sub{margin-bottom:2px}
+    .scn-list{flex-direction:row;overflow-x:auto;gap:8px;padding-bottom:4px;-webkit-overflow-scrolling:touch}
+    .scn{flex:0 0 auto;width:200px}
+    .wrap{order:2;height:auto;min-height:auto;overflow:visible;padding:14px;padding-right:14px;gap:11px}
+    h1{font-size:clamp(20px,7vw,28px)}
+    .stage{grid-template-columns:1fr;gap:12px;flex:none}
+    .stage>div{min-height:auto}
+    .panel{flex:none;min-height:auto;overflow:visible}
+    .log{height:auto;max-height:150px}
+    .hud{font-size:12px}
+    .race{left:50%;width:min(92vw,540px)}
+    .legend{font-size:10px;gap:10px}
+    .controls{gap:10px}
+    input[type=text]{width:30vw;min-width:96px}
+  }
+</style>
+</head>
+<body>
+<div id="lightbox" hidden></div>
+<div class="wrap">
+
+  <!-- WRITE RACE (modal, shown only for scenario 4) -->
+  <div class="panel race" id="race" hidden>
+    <div class="race-hd">Write throughput · <b id="raceN">16</b> writes — sequential append (LSM) vs random in-place update (B-tree)</div>
+    <div class="lanes">
+      <div class="lane">
+        <div class="lane-top"><span class="lane-name" style="color:var(--mem)">LSM-tree · append to end of log</span><span class="lane-cost"><b id="costLSM">0</b> disk-cost</span></div>
+        <div class="track" id="trackLSM"></div>
+        <div class="lane-bar"><i id="barLSM"></i></div>
+      </div>
+      <div class="lane">
+        <div class="lane-top"><span class="lane-name" style="color:var(--del)">B-tree · seek to a random page, rewrite it</span><span class="lane-cost"><b id="costBT">0</b> disk-cost</span></div>
+        <div class="track" id="trackBT"></div>
+        <div class="lane-bar"><i id="barBT" class="bad"></i></div>
+      </div>
+    </div>
+    <div class="race-result" id="raceResult"></div>
+  </div>
+
+  <div class="controls">
+    <div class="field"><label for="key">key</label><input type="text" id="key" placeholder="e.g. 42" maxlength="6" value="50"></div>
+    <div class="field"><label for="val">value</label><input type="text" id="val" placeholder="e.g. apple" maxlength="10" value="apple"></div>
+    <div class="btns">
+      <button class="b-put" id="bPut"><span class="dot"></span>PUT</button>
+      <button class="b-get" id="bGet"><span class="dot"></span>GET</button>
+      <button class="b-del" id="bDel"><span class="dot"></span>DELETE</button>
+    </div>
+    <div class="spacer"></div>
+    <button class="b-ghost" id="bReset">⟳ reset</button>
+  </div>
+
+  <div class="hud" id="hud" hidden><span class="hud-ico" id="hudIco">🔍</span><span id="hudText"></span></div>
+
+  <div class="explain" id="explain">
+    <div class="explain-bar"><button id="bFold" class="foldbtn">▸ show explanation</button><span class="cb-spacer"></span><button id="bPause" class="pausebtn">⏸ Pause</button></div>
+    <div class="log" id="log"></div>
+    <div class="pausecard" id="pausecard" hidden></div>
+  </div>
+
+  <div class="stage">
+    <div>
+      <div class="col-title">Volatile Memory <span class="pill">RAM</span></div>
+      <div class="panel">
+        <div class="memtable" id="memtable">
+          <div class="mt-head"><div class="title"><span>◆</span> MemTable <span id="mtBadge"></span></div><div class="cap" id="mtCap">0 / 3</div></div>
+          <div class="fill"><i id="mtFill" style="width:0%"></i></div>
+          <div class="entries" id="mtEntries"></div>
+        </div>
+        <p class="hint">Lost on crash — which is why each write hits the WAL on disk first. On restart the WAL is replayed to rebuild this table.</p>
+      </div>
+    </div>
+    <div>
+      <div class="col-title">Durable Storage <span class="pill">disk · survives crashes</span></div>
+      <div class="panel">
+        <div class="col-title sm" style="color:var(--wal)">Write-Ahead Log · append-only</div>
+        <div class="wal-log" id="wal"><div class="wal-empty">— durability journal —</div></div>
+        <div class="col-title sm" style="color:var(--sst)">SSTable Levels <span class="pill">each carries a Bloom filter</span></div>
+        <div id="disk"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="legend">
+    <span><i style="background:var(--mem)"></i>MemTable / found</span>
+    <span><i style="background:var(--wal)"></i>WAL / Bloom bit</span>
+    <span><i style="background:var(--sst)"></i>SSTable read</span>
+    <span><i style="background:var(--comp)"></i>compaction</span>
+    <span><i style="background:var(--del)"></i>tombstone / skip</span>
+  </div>
+</div>
+
+<aside class="sidebar">
+  <div class="sb-title">Guided scenarios</div>
+  <div class="sb-sub">run slow · watch the animation</div>
+  <div class="scn-list">
+    <button class="scn" data-s="1"><span class="t"><b>1</b> Write & read basics</span><span class="d">WAL + MemTable, flush, then how a read finds a key.</span></button>
+    <button class="scn" data-s="2"><span class="t"><b>2</b> Updating a key</span><span class="d">Immutable files — new value shadows the old.</span></button>
+    <button class="scn" data-s="3"><span class="t"><b>3</b> Deleting a key</span><span class="d">Tombstones mark deletes; data lingers until compaction.</span></button>
+    <button class="scn" data-s="4"><span class="t"><b>4</b> Why writes are fast</span><span class="d">Sequential append vs random in-place — a race.</span></button>
+    <button class="scn" data-s="5"><span class="t"><b>5</b> Missing key + Bloom</span><span class="d">The worst-case read, and the bit-array that fixes it.</span></button>
+    <button class="scn" data-s="6"><span class="t"><b>6</b> Read amplification + compaction</span><span class="d">Reads touch many files; compaction repays the cost.</span></button>
+  </div>
+</aside>
+
+<script>
+/* ===== CONFIG ===== */
+const MEM_LIMIT=3, SST_MAX=3, NLEVELS=2; let L0_MAX=3;
+const capEntries=n=>(n===1?6:Infinity);
+const SLOW=950, BUILD_DELAY=240, RACE_STEP=430, RACE_N=16;
+const BLOOM_BITS=12, BLOOM_K=3;
+
+/* ===== STATE ===== */
+let seq=0, sstId=0, memtable=[], levels=Array.from({length:NLEVELS},()=>[]);
+let stats={writes:0,flush:0,comp:0}, busy=false, DELAY=550, freshKey=null, autoCompact=true;
+let HL={foundMem:false,foundSst:null,scanMode:false,checking:null,done:{},bloom:null,searchKey:null,merge:null};
+
+/* ===== HELPERS ===== */
+const $=id=>document.getElementById(id);
+let paused=false, resumeWaiters=[];
+function gateP(){ return paused ? new Promise(r=>resumeWaiters.push(r)) : Promise.resolve(); }
+function setPaused(v){ paused=v; const b=$('bPause'); if(b){ b.textContent=v?'▶ Continue':'⏸ Pause'; b.classList.toggle('held',v); } $('lightbox').hidden=!v; $('explain').classList.toggle('spotlit',v); if(v){ try{$('explain').scrollIntoView({behavior:'smooth',block:'center'});}catch(e){} } if(!v){ const w=resumeWaiters; resumeWaiters=[]; w.forEach(r=>r()); } }
+const wait=ms=>new Promise(r=>setTimeout(r,ms==null?DELAY:ms)).then(gateP);
+// A read-checkpoint: show ONLY this paragraph (clean, no scroll) while paused; keep it in the log afterwards.
+async function checkpoint(html){
+  log(html,'c-pause');                          // persist it in the explanation history
+  $('pausecard').innerHTML=html; $('pausecard').hidden=false; $('log').style.display='none';
+  hud('op','⏸ paused — read the note, then click <b>Continue</b>');
+  setPaused(true); await gateP();
+  $('pausecard').hidden=true; $('log').style.display='';
+}
+function cmp(a,b){const na=Number(a),nb=Number(b);if(!isNaN(na)&&!isNaN(nb))return na-nb;return a<b?-1:a>b?1:0;}
+function bloomPos(key){const s=String(key);let h1=2166136261>>>0;for(let i=0;i<s.length;i++){h1^=s.charCodeAt(i);h1=Math.imul(h1,16777619)>>>0;}let h2=5381>>>0;for(let i=0;i<s.length;i++){h2=((h2<<5)+h2+s.charCodeAt(i))>>>0;}const p=[];for(let i=0;i<BLOOM_K;i++)p.push(((h1+i*h2)>>>0)%BLOOM_BITS);return p;}
+function buildBloom(keys){const b=new Array(BLOOM_BITS).fill(0);for(const k of keys)for(const p of bloomPos(k))b[p]=1;return b;}
+function bloomMaybe(s,key){return bloomPos(key).every(p=>s.bloom[p]===1);}
+function makeSST(entries){return {id:++sstId,entries,min:entries[0].key,max:entries[entries.length-1].key,bloom:buildBloom(entries.map(e=>e.key))};}
+function chunk(entries){const o=[];for(let i=0;i<entries.length;i+=SST_MAX)o.push(makeSST(entries.slice(i,i+SST_MAX)));return o;}
+function mergeEntries(lists){const m=new Map();for(const l of lists)for(const e of l){const c=m.get(e.key);if(!c||e.seq>c.seq)m.set(e.key,e);}return [...m.values()].sort((a,b)=>cmp(a.key,b.key));}
+const overlaps=(aMin,aMax,bMin,bMax)=>cmp(aMin,bMax)<=0&&cmp(bMin,aMax)<=0;
+const totalEntries=lvl=>lvl.reduce((s,t)=>s+t.entries.length,0);
+function log(t,cls='c-info'){const r=document.createElement('div');r.className='row';r.innerHTML=`<span class="p">$</span><span class="${cls}">${t}</span>`;$('log').appendChild(r);$('log').scrollTop=$('log').scrollHeight;}
+
+/* ===== ANIMATION OVERLAYS ===== */
+async function typeInto(el,text){
+  el.classList.add('typing'); el.value='';
+  const per=Math.min(65,Math.max(28,DELAY*0.07));
+  for(let i=0;i<text.length;i++){ el.value=text.slice(0,i+1); await wait(per); }
+  el.classList.remove('typing');
+}
+async function setFields(key,value,op){
+  await typeInto($('key'),String(key));
+  if(op==='put') await typeInto($('val'),String(value));
+  else { $('val').value=''; }
+}
+let lastOp=null;
+const OP_BTN={put:'bPut',get:'bGet',del:'bDel'};
+const OP_NAME={put:'PUT',get:'GET',del:'DELETE'};
+function setActiveOp(op){ for(const o in OP_BTN) $(OP_BTN[o]).classList.toggle('active',o===op); }
+function highlightLabels(op){
+  const kl=document.querySelector('label[for="key"]'), vl=document.querySelector('label[for="val"]');
+  [kl,vl].forEach(l=>l.classList.remove('lit-put','lit-get','lit-del'));
+  kl.classList.add('lit-'+op);
+  if(op==='put') vl.classList.add('lit-'+op);
+  return op==='put'?[kl,vl]:[kl];
+}
+function blinkRow(op){ const c=document.querySelector('.controls'); c.classList.remove('cf-put','cf-get','cf-del'); void c.offsetWidth; c.classList.add('cf-'+op); setTimeout(()=>c.classList.remove('cf-'+op),880); }
+function pulseActiveOp(op){ const el=$(OP_BTN[op]); el.classList.remove('op-pulse'); void el.offsetWidth; el.classList.add('op-pulse'); setTimeout(()=>el.classList.remove('op-pulse'),520); }
+function clearOpHighlight(){ for(const o in OP_BTN) $(OP_BTN[o]).classList.remove('active'); document.querySelectorAll('.field label').forEach(l=>l.classList.remove('lit-put','lit-get','lit-del','blink')); lastOp=null; }
+// Announce + highlight the operation; blink the whole control row when first chosen / changed; pause longer on a real change.
+async function beginOp(op){
+  const firstOrChanged = lastOp!==op;
+  const changed = lastOp!==null && lastOp!==op;
+  setActiveOp(op);
+  highlightLabels(op);
+  if(firstOrChanged){ blinkRow(op); pulseActiveOp(op); }
+  if(changed){
+    hud('op',`behaviour changed → now performing <b>${OP_NAME[op]}</b>`);
+    await wait(Math.max(850,DELAY));
+  } else if(firstOrChanged){
+    await wait(Math.max(550,DELAY*0.7));
+  }
+  lastOp=op;
+}
+function recordChip(key,value,op){
+  if(op==='get') return `<span class="fc-op get">GET</span><span class="fc-kv">key <b>${key}</b></span>`;
+  if(op==='del') return `<span class="fc-op del">DEL</span><span class="fc-kv">key <b>${key}</b></span>`;
+  return `<span class="fc-op put">PUT</span><span class="fc-kv">key <b>${key}</b> <span class="fc-arr">=</span> <b>${value}</b></span>`;
+}
+async function fly(html,fromEl,toEl,op){
+  const f=document.createElement('div');f.className='flyer'+(op?' '+op:'');f.innerHTML=html;document.body.appendChild(f);
+  const a=fromEl.getBoundingClientRect(),b=toEl.getBoundingClientRect();
+  f.style.left=a.left+'px';f.style.top=(a.top-4)+'px';
+  f.getBoundingClientRect();
+  const dur=Math.min(640,Math.max(380,DELAY*0.8));
+  f.style.transition=`transform ${dur}ms cubic-bezier(.45,0,.2,1)`;
+  f.style.transform=`translate(${b.left-a.left+8}px, ${b.top-a.top+8}px)`;
+  await wait(dur+40); f.remove();
+}
+async function flyBlock(entries,fromEl,toEl){
+  const a=fromEl.getBoundingClientRect(),b=toEl.getBoundingClientRect();
+  const f=document.createElement('div');f.className='flyblock';
+  f.innerHTML='<div class="fb-cap">MEMTABLE → SSTABLE</div>'+entries.map(e=>`<div class="fb-row${e.deleted?' tomb':''}">${e.key}${e.deleted?'  ⌫ del':'  › '+e.value}</div>`).join('');
+  document.body.appendChild(f);
+  f.style.left=a.left+'px';f.style.top=a.top+'px';f.style.width=Math.min(a.width,210)+'px';
+  f.getBoundingClientRect();
+  const dur=Math.min(950,Math.max(560,DELAY));
+  const dx=(b.left+b.width/2)-(a.left+Math.min(a.width,210)/2), dy=(b.top+18)-a.top;
+  f.style.transition=`transform ${dur}ms cubic-bezier(.5,0,.25,1), opacity ${dur}ms`;
+  f.style.transform=`translate(${dx}px, ${dy}px) scale(.62)`; f.style.opacity='0.15';
+  await wait(dur+40); f.remove();
+}
+let probeEl=null;
+function probe(){ if(!probeEl){probeEl=document.createElement('div');probeEl.className='probe';document.body.appendChild(probeEl);} return probeEl; }
+async function moveProbe(el,label,kind){const p=probe();p.textContent=label;p.className='probe show '+(kind||'');const r=el.getBoundingClientRect();p.style.left=(r.left+r.width/2)+'px';p.style.top=(r.top-6)+'px';await wait(Math.min(480,DELAY*0.7));}
+function hideProbe(){if(probeEl)probeEl.className='probe';}
+function walFlash(){const w=$('wal');w.classList.add('flash');setTimeout(()=>w.classList.remove('flash'),500);}
+const HUD_ICO={search:'🔍',found:'✓',miss:'✗',compact:'⛏',op:'▶'};
+function hud(mode,html){const h=$('hud');h.hidden=false;h.className='hud '+mode;$('hudIco').textContent=HUD_ICO[mode]||'•';$('hudText').innerHTML=html;}
+function hudHide(){$('hud').hidden=true;}
+
+/* ===== WRITE PATH ===== */
+async function doPut(key,value,opts={}){
+  const isDel=!!opts.del, anim=opts.fly!==false;
+  clearHL();hideProbe();hudHide();
+  seq++;
+  const op=isDel?'del':'put';
+  if(anim){
+    await beginOp(op);
+    await setFields(key,value,op);
+    await fly(recordChip(key,value,op),$('key'),$('wal'),op);   // ① to WAL (disk)
+  }
+  addWal(isDel?`DEL  ${key}`:`PUT  ${key} = ${value}`); walFlash();
+  if(anim){ await wait(Math.min(300,DELAY*0.45)); await fly(recordChip(key,value,op),$('wal'),$('memtable'),op); } // ② to MemTable
+  const entry={key,value:isDel?null:value,deleted:isDel,seq};
+  const i=memtable.findIndex(e=>e.key===key);
+  if(i>=0)memtable[i]=entry;else memtable.push(entry);
+  memtable.sort((a,b)=>cmp(a.key,b.key));
+  stats.writes++; freshKey=key;
+  pulseMem(); render(); freshKey=null; await wait();
+  if(memtable.length>=MEM_LIMIT){ await flush(); }
+}
+const doDelete=key=>doPut(key,null,{del:true});
+
+async function flush(){
+  const entries=memtable.map(e=>({...e}));
+  const sst=makeSST(entries);
+  hud('compact',`flush · the full MemTable is written out to disk as one new SSTable <span class="kk">#${sst.id}</span>`);
+  if(DELAY>BUILD_DELAY){ await flyBlock(entries,$('memtable'),$('lvl0')); }  // visible drop onto disk
+  levels[0].push(sst); memtable=[]; stats.flush++;
+  clearWal(sst.id); pulseLevel(0); render(); await wait();
+  if(levels[0].length>=L0_MAX){ await compact(0); }
+}
+async function compact(n){
+  const target=n+1, sources=levels[n].flatMap(s=>s.entries);
+  if(!sources.length)return;
+  let lo=sources[0].key,hi=sources[0].key;
+  for(const e of sources){if(cmp(e.key,lo)<0)lo=e.key;if(cmp(e.key,hi)>0)hi=e.key;}
+  const isBottom=target===NLEVELS-1;
+  const overlap=levels[target].filter(s=>overlaps(s.min,s.max,lo,hi));
+  const keep=levels[target].filter(s=>!overlaps(s.min,s.max,lo,hi));
+
+  // ① spotlight the files chosen for this compaction
+  HL.merge={src:new Set(levels[n].map(s=>s.id)),dst:new Set(overlap.map(s=>s.id)),made:new Set()};
+  hud('compact',`compaction · picked <b>${levels[n].length}</b> file(s) from ${levelName(n)}`+(overlap.length?` + <b>${overlap.length}</b> overlapping file(s) from ${levelName(target)}`:'')+` to merge into ${levelName(target)}`);
+  pulseLevel(n);pulseLevel(target);render();await wait();await wait();
+
+  // ② merge + dedup (newest wins); purge tombstones at the bottom level
+  let merged=mergeEntries([sources,...overlap.map(s=>s.entries)]);
+  const purged=isBottom?merged.filter(e=>e.deleted).length:0;
+  if(isBottom)merged=merged.filter(e=>!e.deleted);
+  hud('compact',`merging & sorting ${sources.length+overlap.reduce((s,t)=>s+t.entries.length,0)} entries → <b>${merged.length}</b> after dedup`+(purged?`, <b>${purged}</b> tombstone(s) purged`:''));
+  await wait();
+
+  // ③ write the freshly merged SSTables into the target level
+  const fresh=chunk(merged.map(e=>({...e})));
+  levels[target]=[...keep,...fresh].sort((a,b)=>cmp(a.min,b.min));
+  levels[n]=[];stats.comp++;
+  HL.merge={src:new Set(),dst:new Set(),made:new Set(fresh.map(s=>s.id))};
+  hud('compact',`done · wrote <b>${fresh.length}</b> merged SSTable(s) into ${levelName(target)}; ${levelName(n)} is now empty`);
+  pulseLevel(target);render();await wait();await wait();
+  HL.merge=null;render();
+
+  if(target<NLEVELS-1&&totalEntries(levels[target])>capEntries(target)){await compact(target);}
+}
+
+/* ===== READ PATH ===== */
+async function doGet(key,opts={}){
+  const bloom=!!opts.bloom, anim=opts.fly!==false;
+  clearHL();hudHide();
+  HL.searchKey=key;
+  if(anim){ await beginOp('get'); hud('search',`submitting query for key <span class="kk">${key}</span> …`); await setFields(key,null,'get'); await fly(recordChip(key,null,'get'),$('key'),$('memtable'),'get'); }
+  HL.scanMode=true; HL.done={}; HL.checking=null;
+  let reads=0,skips=0,fp=0;
+  hud('search',`looking for key <span class="kk">${key}</span> — starting at the newest data and working down${bloom?' · Bloom filters ON':''}`);
+
+  // ① MemTable
+  HL.checking='mem'; render(); hud('search',`looking for key <span class="kk">${key}</span> — is it in the MemTable (RAM)?`);
+  await moveProbe($('memtable'),`is ${key} in MemTable?`); await wait(); reads++;
+  const m=memtable.find(e=>e.key===key);
+  if(m){ HL.done['mem']=m.deleted?'tomb':'hit'; HL.checking=null; render();
+    await moveProbe($('memtable'),m.deleted?`${key}: ⌫ tombstone!`:`${key}: ✓ HIT`,m.deleted?'miss':'hit');
+    return finishGet(key,m,'MemTable',{mem:true},reads,skips,fp,bloom); }
+  HL.done['mem']='miss'; HL.checking=null; render();
+
+  // ② L0 (newest file first — they overlap)
+  for(let i=levels[0].length-1;i>=0;i--){
+    const s=levels[0][i];
+    if(bloom){ const r=await bloomGate(s,'L0',key); if(!r){skips++;continue;} }
+    HL.checking=s.id; render(); hud('search',`looking for key <span class="kk">${key}</span> — reading L0 · SSTable #${s.id} from disk`);
+    await moveProbe(elSST(s.id),`is ${key} in #${s.id}?`); await wait(); reads++;
+    const e=s.entries.find(x=>x.key===key);
+    if(e){ HL.done[s.id]=e.deleted?'tomb':'hit'; HL.checking=null; render();
+      await moveProbe(elSST(s.id),e.deleted?`${key}: ⌫ tombstone!`:`${key}: ✓ HIT`,e.deleted?'miss':'hit');
+      return finishGet(key,e,`L0 · SSTable #${s.id}`,{sst:s.id},reads,skips,fp,bloom); }
+    HL.done[s.id]='miss'; HL.checking=null; if(bloom)fp++; render();
+  }
+  // ③ deeper levels (non-overlapping → at most one file per level)
+  for(let n=1;n<NLEVELS;n++){
+    const cand=levels[n].filter(s=>cmp(key,s.min)>=0&&cmp(key,s.max)<=0);
+    for(const s of cand){
+      if(bloom){ const r=await bloomGate(s,levelName(n),key); if(!r){skips++;continue;} }
+      HL.checking=s.id; render(); hud('search',`looking for key <span class="kk">${key}</span> — reading ${levelName(n)} · SSTable #${s.id} from disk`);
+      await moveProbe(elSST(s.id),`is ${key} in #${s.id}?`); await wait(); reads++;
+      const e=s.entries.find(x=>x.key===key);
+      if(e){ HL.done[s.id]=e.deleted?'tomb':'hit'; HL.checking=null; render();
+        await moveProbe(elSST(s.id),e.deleted?`${key}: ⌫ tombstone!`:`${key}: ✓ HIT`,e.deleted?'miss':'hit');
+        return finishGet(key,e,`${levelName(n)} · SSTable #${s.id}`,{sst:s.id},reads,skips,fp,bloom); }
+      HL.done[s.id]='miss'; HL.checking=null; if(bloom)fp++; render();
+    }
+  }
+  hideProbe();
+  hud('miss',`key <span class="kk">${key}</span> not found — scanned ${reads} structure(s)${bloom&&skips?`, Bloom-skipped ${skips}`:''}`);
+  ampNote(reads,skips,fp,bloom); HL.checking=null; render();   // keep scanMode so the full ✗ trail stays visible
+  return reads;
+}
+async function bloomGate(s,lvl,key){
+  const pos=[...new Set(bloomPos(key))].sort((a,b)=>a-b);
+  // beat 1: show which bits this key hashes to (verdict not decided yet)
+  HL.checking=s.id; HL.bloom={id:s.id,pos,verdict:null}; render();
+  hud('search',`Bloom check on ${lvl} · #${s.id}: does it maybe contain key ${key}?`);
+  await moveProbe(elSST(s.id),`hash ${key} → bits ${pos.join(',')}`); await wait(); await wait();
+  // beat 2: reveal whether all those bits are set
+  const maybe=bloomMaybe(s,key);
+  HL.bloom.verdict=maybe?'maybe':'absent'; render(); await wait(); await wait();
+  if(!maybe){ const zero=pos.find(p=>!s.bloom[p]);
+    HL.bloom=null; HL.checking=null; HL.done[s.id]='skip'; render(); await wait(); return false; }
+  await wait();
+  HL.bloom=null; return true;   // leave HL.checking set for the read step
+}
+function finishGet(key,e,where,mark,reads,skips,fp,bloom){
+  hideProbe();
+  if(e.deleted){ hud('miss',`key <span class="kk">${key}</span> was DELETED — tombstone found in ${where}`); }
+  else{ hud('found',`key <span class="kk">${key}</span> found in ${where} → value <b>${e.value}</b>`); }
+  ampNote(reads,skips,fp,bloom);
+  HL.checking=null; HL.bloom=null; HL.foundMem=!!mark.mem; HL.foundSst=mark.sst||null; render();
+  return reads;
+}
+function ampNote(reads,skips,fp,bloom){
+  let s=`read amplification: examined ${reads} structure${reads!==1?'s':''}`;
+  if(bloom){s+=`, Bloom-skipped ${skips}`;if(fp)s+=` (incl. ${fp} false-positive read${fp!==1?'s':''})`;}
+  log('  ↳ '+s,bloom?'c-comp':'c-muted');
+}
+
+/* ===== RENDER ===== */
+function render(){
+  $('mtCap').textContent=`${memtable.length} / ${MEM_LIMIT}`;
+  $('mtFill').style.width=(memtable.length/MEM_LIMIT*100)+'%';
+  const mt=$('mtEntries');mt.innerHTML='';
+  if(!memtable.length)mt.innerHTML='<div class="empty-note">empty — writes land here first</div>';
+  else for(const e of memtable)mt.appendChild(entryEl(e));
+  const mtb=$('memtable'); mtb.classList.remove('found','checking','missed','dim'); let mtBadge='';
+  if(HL.scanMode){
+    const st=HL.checking==='mem'?'check':HL.done['mem'];
+    if(st==='check'){mtb.classList.add('checking');mtBadge='<span class="badge scan">scanning…</span>';}
+    else if(st==='miss'){mtb.classList.add('missed');mtBadge='<span class="badge miss">✗ not here</span>';}
+    else if(st==='hit'){mtb.classList.add('found');mtBadge='<span class="badge hit">✓ HIT</span>';}
+    else if(st==='tomb'){mtb.classList.add('found');mtBadge='<span class="badge miss">⌫ deleted</span>';}
+    else{mtb.classList.add('dim');}
+  } else if(HL.foundMem){ mtb.classList.add('found'); }
+  $('mtBadge').innerHTML=mtBadge;
+  const disk=$('disk');disk.innerHTML='';
+  for(let n=0;n<NLEVELS;n++){
+    disk.appendChild(levelEl(n));
+    if(n===0&&NLEVELS>=2) disk.appendChild(ellipsisEl());
+  }
+}
+function ellipsisEl(){
+  const d=document.createElement('div');d.className='level-ellipsis';
+  d.innerHTML=`⋯&nbsp; intermediate levels L1, L2 … (each ~10× larger, made by more compaction) &nbsp;⋯`;
+  return d;
+}
+function entryEl(e){
+  const active=HL.checking==='mem'||HL.foundMem;
+  const q=active&&HL.searchKey!=null&&e.key===HL.searchKey?' qrow':'';
+  const d=document.createElement('div');d.className='entry'+(e.deleted?' tomb':'')+(e.key===freshKey?' fresh':'')+q;
+  d.innerHTML=e.deleted
+    ?`<span class="key">${e.key}</span><span class="arrow">⌫</span><span class="val">deleted</span><span class="seq">#${e.seq}</span>`
+    :`<span class="key">${e.key}</span><span class="arrow">›</span><span class="val">${e.value}</span><span class="seq">#${e.seq}</span>`;
+  return d;
+}
+function levelEl(n){
+  const used=totalEntries(levels[n]),isBottom=n===NLEVELS-1;
+  const div=document.createElement('div');div.className='level'+(HL.scanMode&&HL.checking!=null&&levels[n].some(s=>s.id===HL.checking)?' scan':'');div.id='lvl'+n;
+  let meta,pct,over=false;
+  if(n===0){meta=`${levels[0].length} / ${L0_MAX} files · overlapping`;pct=levels[0].length/L0_MAX*100;over=levels[0].length>=L0_MAX;}
+  else{meta=`${used} entries · deepest, sorted`;pct=used?100:0;}
+  const tag=n===0?'L0':'Lₙ';
+  div.innerHTML=`<div class="level-head"><span class="level-tag" style="color:${levelColor(n)}">${tag}</span><span class="level-meta">${meta}</span><span class="level-bar"><i class="${over?'over':''}" style="width:${Math.min(100,pct)}%"></i></span></div>`;
+  const row=document.createElement('div');row.className='ssts';
+  if(!levels[n].length)row.innerHTML='<div class="empty-note">— empty —</div>';
+  else for(const s of levels[n])row.appendChild(sstEl(s));
+  div.appendChild(row);return div;
+}
+function levelColor(n){return ['#6fb6ff','#9b8bff'][n]||'var(--sst)';}
+function levelName(n){return n===0?'L0':(n===NLEVELS-1?'Lₙ':'L'+n);}
+const elSST=id=>$('sst'+id);
+function sstEl(s){
+  const bc=HL.bloom&&HL.bloom.id===s.id?HL.bloom:null;
+  const d=document.createElement('div');d.id='sst'+s.id;
+  let cls='sst',badge='';
+  if(HL.merge){
+    if(HL.merge.src.has(s.id)){cls+=' merging';badge='<span class="badge comp">merging ↓</span>';}
+    else if(HL.merge.dst.has(s.id)){cls+=' merging';badge='<span class="badge comp">+ merge</span>';}
+    else if(HL.merge.made.has(s.id)){cls+=' newmerged';badge='<span class="badge hit">★ merged</span>';}
+    else{cls+=' dim';}
+  } else if(bc){
+    cls+=' checking';
+    if(bc.verdict==='maybe'){cls+=' maybe';badge='<span class="badge hit">MAYBE → read</span>';}
+    else if(bc.verdict==='absent'){cls+=' absent';badge='<span class="badge skip">ABSENT → skip</span>';}
+    else{badge='<span class="badge scan">bloom?</span>';}
+  } else if(HL.scanMode){
+    const st=HL.checking===s.id?'check':HL.done[s.id];
+    if(st==='check'){cls+=' checking';badge='<span class="badge scan">reading…</span>';}
+    else if(st==='miss'){cls+=' missed';badge='<span class="badge miss">✗</span>';}
+    else if(st==='tomb'){cls+=' found';badge='<span class="badge miss">⌫</span>';}
+    else if(st==='hit'){cls+=' found';badge='<span class="badge hit">✓ HIT</span>';}
+    else if(st==='skip'){cls+=' skip';badge='<span class="badge skip">skip</span>';}
+    else{cls+=' dim';}
+  }
+  if(HL.foundSst===s.id&&!/\bfound\b/.test(cls))cls+=' found';
+  const active=!HL.merge&&(bc||HL.checking===s.id||HL.foundSst===s.id);
+  let rows='';for(const e of s.entries){
+    const q=active&&HL.searchKey!=null&&e.key===HL.searchKey?' qrow':'';
+    rows+=e.deleted
+      ?`<div class="srow tomb${q}"><span class="k">${e.key}</span><span class="v">⌫ del</span></div>`
+      :`<div class="srow${q}"><span class="k">${e.key}</span><span class="v">${e.value}</span></div>`;
+  }
+  let bf='';for(let i=0;i<BLOOM_BITS;i++){const qb=bc&&bc.pos.includes(i);bf+=`<i class="${s.bloom[i]?'on':''}${qb?' q':''}"></i>`;}
+  let why='';
+  if(bc){
+    const k=HL.searchKey, ps=[...new Set(bc.pos)].sort((a,b)=>a-b);
+    if(bc.verdict==='maybe') why=`<div class="bf-why maybe">key ${k} → check bits ${ps.join(', ')} · all are 1 → <b>maybe here</b>, read it</div>`;
+    else if(bc.verdict==='absent'){ const zero=ps.find(p=>!s.bloom[p]); why=`<div class="bf-why absent">key ${k} → check bits ${ps.join(', ')} · bit ${zero} is 0 → <b>cannot be here</b>, skip</div>`; }
+    else why=`<div class="bf-why check">key ${k} hashes to bits ${ps.join(', ')} — are they all set?</div>`;
+  }
+  d.className=cls;
+  d.innerHTML=`${badge}<div class="sst-head"><span class="sst-id">#${s.id}</span><span class="sst-range">${s.min}–${s.max}</span></div><div class="sst-rows">${rows}</div><div class="bf">${bf}</div><div class="bf-tag">bloom filter (${BLOOM_BITS} bits)</div>${why}`;
+  return d;
+}
+function addWal(t){const w=$('wal');const e=w.querySelector('.wal-empty');if(e)e.remove();const ln=document.createElement('div');ln.className='ln';ln.innerHTML=`<span class="op">[${String(seq).padStart(3,'0')}]</span> ${t}`;w.prepend(ln);}
+function clearWal(id){$('wal').innerHTML=`<div class="wal-empty">✓ checkpoint — segment truncated (durable in SSTable #${id})</div>`;}
+function pulseMem(){const el=$('memtable');el.classList.add('pulse');setTimeout(()=>el.classList.remove('pulse'),560);}
+function pulseLevel(n){render();const el=$('lvl'+n);if(el){el.classList.add('pulse');setTimeout(()=>el.classList.remove('pulse'),660);}}
+function clearHL(){HL={foundMem:false,foundSst:null,scanMode:false,checking:null,done:{},bloom:null,searchKey:null,merge:null};}
+
+/* ===== UI WIRING ===== */
+function setDisabled(v){document.querySelectorAll('button, input').forEach(el=>{if(el.id!=='bPause')el.disabled=v;});}
+$('bPause').onclick=()=>setPaused(!paused);
+function setFold(f){ $('explain').classList.toggle('folded',f); $('bFold').textContent=f?'▸ show explanation':'▾ hide explanation'; }
+$('bFold').onclick=()=>setFold(!$('explain').classList.contains('folded'));
+async function guard(fn){if(busy)return;busy=true;document.body.classList.add('running');setPaused(false);setDisabled(true);try{await fn();}finally{busy=false;document.body.classList.remove('running');setPaused(false);setDisabled(false);}}
+function flash(id){const el=$(id);el.style.borderColor='var(--del)';setTimeout(()=>el.style.borderColor='',500);el.focus();}
+$('bPut').onclick=()=>{const k=$('key').value.trim(),v=$('val').value.trim();if(!k)return flash('key');if(!v)return flash('val');guard(()=>doPut(k,v));};
+$('bDel').onclick=()=>{const k=$('key').value.trim();if(!k)return flash('key');guard(()=>doDelete(k));};
+$('bGet').onclick=()=>{const k=$('key').value.trim();if(!k)return flash('key');guard(()=>doGet(k));};
+$('key').addEventListener('keydown',e=>{if(e.key==='Enter')$('bPut').click();});
+$('val').addEventListener('keydown',e=>{if(e.key==='Enter')$('bPut').click();});
+function doReset(){seq=0;sstId=0;memtable=[];levels=Array.from({length:NLEVELS},()=>[]);stats={writes:0,flush:0,comp:0};clearHL();hideProbe();hudHide();clearOpHighlight();setPaused(false);$('pausecard').hidden=true;$('log').style.display='';$('race').hidden=true;document.body.classList.remove('modal');$('wal').innerHTML='<div class="wal-empty">— durability journal —</div>';$('log').innerHTML='';render();}
+$('bReset').onclick=()=>guard(async()=>{doReset();log('reset — empty tree, ready for writes','c-muted');});
+
+/* ===== SCENARIOS ===== */
+function head(t){log(t,'c-head');}
+function isMobile(){ return window.matchMedia('(max-width:820px)').matches; }
+async function scenario(fn){const prev=DELAY;DELAY=SLOW;try{doReset();setFold(true);if(isMobile()){try{$('explain').scrollIntoView({behavior:'smooth',block:'start'});}catch(e){}}await wait(350);await fn();hud('found','scenario complete — try your own keys, or pick another on the right');log('— scenario complete —','c-muted');}finally{DELAY=prev;}}
+async function build(pairs){const prev=DELAY;DELAY=BUILD_DELAY;try{for(const[k,v]of pairs)await doPut(k,v,{fly:false});}finally{DELAY=prev;}}
+
+// 1 — write & read basics
+async function s1(){
+  head('SCENARIO 1 · The write path and the read path');
+  await checkpoint('GOAL: see what happens on a write, and how a read finds a key. First we PUT a few keys. Watch each one travel: input → WAL (on disk, for crash safety) → MemTable (sorted, in RAM). Click Continue.');
+  await doPut('50','apple');await doPut('30','banana');
+  await checkpoint('Two keys are buffered in the MemTable. The MemTable here holds 3 entries; the next PUT will fill it and trigger a FLUSH — the whole MemTable is written to disk as one immutable SSTable. Continue to watch the flush.');
+  await doPut('70','cherry');           // triggers flush
+  await doPut('20','date');await doPut('60','elder');
+  await checkpoint('Now data lives in two places: the newest keys in the MemTable (RAM) and older ones in an SSTable (disk). A READ must therefore search newest → oldest. First, GET 60 — it is still in the MemTable.');
+  await doGet('60');
+  await checkpoint('Found in RAM, no disk touched. Now GET 50 — it was flushed earlier, so the scanner misses the MemTable and descends to the SSTable on disk.');
+  await doGet('50');
+}
+// 2 — updates never overwrite
+async function s2(){
+  head('SCENARIO 2 · Updating a key (it never overwrites in place)');
+  await checkpoint('GOAL: see how an LSM-tree handles updates. We PUT key 42, then flush it to disk, then PUT 42 again with a new value. Continue.');
+  await doPut('42','old-v1');
+  await build([['10','x'],['90','y']]);   // flush 42 to disk
+  await checkpoint('42 = old-v1 now sits in an SSTable on disk. SSTables are IMMUTABLE — they are never edited. So when we update 42, the new value cannot overwrite the old one. Continue to PUT 42 again.');
+  await doPut('42','NEW-v2');
+  await checkpoint('Both versions of 42 now exist: NEW-v2 in the MemTable and old-v1 on disk (note the different #seq). The new one simply SHADOWS the old. Now GET 42 — which one comes back?');
+  await doGet('42');
+  log('The read found NEW-v2 first (newest wins) and never read the stale copy. A later compaction will discard old-v1.','c-muted');
+}
+// 3 — deletes are tombstones
+async function s3(){
+  head('SCENARIO 3 · Deleting a key (tombstones)');
+  await checkpoint('GOAL: see how delete works when files are immutable. We PUT 42, flush it to disk, then DELETE it. Continue.');
+  await doPut('42','apple');
+  await build([['30','x'],['70','y']]);   // flush 42 to disk
+  await doGet('42');
+  await checkpoint('42 = apple is on disk and a read finds it. Since the SSTable cannot be edited, a DELETE cannot erase it. Instead it writes a TOMBSTONE — a marker that says "deleted". Continue to delete 42.');
+  await doDelete('42');
+  await checkpoint('A red tombstone for 42 is now in the MemTable; the old value still physically sits on disk underneath it. Now GET 42 — the read meets the tombstone first.');
+  await doGet('42');
+  log('The tombstone (newest) shadows the old value, so the read reports "deleted". Compaction at the deepest level finally drops both the tombstone and the dead value.','c-muted');
+}
+// 4 — write-speed advantage
+async function s4(){
+  head('SCENARIO 4 · Why writes are fast (sequential vs random)');
+  await checkpoint('GOAL: see why LSM-trees are write-optimized. We run the same 16 writes two ways: an LSM appends to the end of its log; a B-tree seeks to a random page and rewrites it. Continue to start the race.');
+  document.body.classList.add('modal');
+  await runRace();
+  await checkpoint('Think of it as a notebook. The LSM-tree always writes on the next blank line — instant. A B-tree has to find the exact existing page, erase it, and rewrite it — for every single record. Continue.');
+  await checkpoint('Why this matters in the real world: on a spinning disk each random seek costs ~10 ms, while a sequential append is almost free. For 1,000,000 writes that is the difference between roughly 10 SECONDS (LSM) and 2.8 HOURS (B-tree) of constant head-seeking — about 1000×. Even on SSDs random writes are far slower and wear the flash faster. This is exactly why write-heavy systems — databases like Cassandra & RocksDB, logging, metrics, and time-series stores — are built on LSM-trees. Continue to close the race.');
+  document.body.classList.remove('modal'); $('race').hidden=true;
+}
+// 5 — Bloom filter
+async function s5(){
+  head('SCENARIO 5 · Reading a key that does not exist (Bloom filters)');
+  await checkpoint('GOAL: see the worst-case read and how to fix it. We build a few SSTables, then look up a key that was never written. Continue.');
+  await build([['10','a'],['20','b'],['30','c'],['40','d'],['50','e'],['60','f'],['70','g'],['80','h'],['90','i'],['11','j'],['12','k'],['13','l'],['14','m'],['15','n'],['16','o']]);
+  await checkpoint('GET 35 — a key that does not exist. With no help, the engine cannot know which file might hold it, so it must read EVERY candidate SSTable from disk before giving up. Continue to watch the expensive miss.');
+  await doGet('35');
+  await checkpoint('That miss did maximum disk work for a "not found". The fix: give every SSTable a small BLOOM FILTER (the bit row under each file). When a key is inserted, it is hashed to a few bits which are set to 1. To test a key, hash it again and check those bits: any 0 ⇒ definitely absent (skip the file); all 1 ⇒ maybe present (read it). Continue to retry the same miss with Bloom filters ON.');
+  await doGet('35',{bloom:true});
+  log('Each file\u2019s queried bits lit GREEN (=1) or RED (=0). One red bit was enough to skip a whole file with no disk read. A Bloom filter can give a false "maybe", but never a false "absent" — so it is always safe.','c-comp');
+}
+async function compactL0Now(){ if(levels[0].length) await compact(0); }
+// 6 — compaction: read amplification + the payoff
+async function s6(){
+  head('SCENARIO 6 · Read amplification, and why compaction fixes it');
+  await checkpoint('GOAL: see the price of cheap writes (reads touching many files) and how compaction repays it. We write key 25 once early, then keep updating OTHER keys and delete one — so stale files pile up while 25 stays buried in the oldest file. Continue to build it.');
+  const prevMax=L0_MAX,prevD=DELAY; L0_MAX=99; DELAY=BUILD_DELAY;   // pause auto-compaction so files accumulate
+  const ops=[['p','10','a1'],['p','20','b1'],['p','25','STAR'],
+             ['p','10','a2'],['p','20','b2'],['p','30','c1'],
+             ['p','10','a3'],['p','30','c2'],['p','40','d1'],
+             ['p','20','b3'],['p','30','c3'],['p','50','e1'],
+             ['p','10','a4'],['p','60','f1'],['d','30']];
+  for(const o of ops){ if(o[0]==='p') await doPut(o[1],o[2],{fly:false}); else await doPut(o[1],null,{del:true,fly:false}); }
+  L0_MAX=prevMax; DELAY=prevD;
+  const bFiles=levels.reduce((s,l)=>s+l.length,0), bEnt=levels.reduce((s,l)=>s+totalEntries(l),0);
+  await checkpoint(`Disk now holds ${bFiles} SSTables / ${bEnt} entries — but most are stale duplicates (10 was written 4×; 30 was written then deleted). That wasted space is one cost of cheap writes. Next, GET 25: it sits only in the OLDEST file, so the read must scan past every newer file first. Continue.`);
+  const before=await doGet('25');
+  await checkpoint(`That single read examined ${before} structures to find one key — this is READ AMPLIFICATION, the price LSM-trees pay for fast writes. The fix is COMPACTION: merge the files, keep only the newest version of each key, drop tombstones, and write sorted non-overlapping files. Continue to compact.`);
+  await compactL0Now();
+  const aFiles=levels.reduce((s,l)=>s+l.length,0), aEnt=levels.reduce((s,l)=>s+totalEntries(l),0);
+  await checkpoint(`SPACE reclaimed: ${bFiles} files / ${bEnt} entries → ${aFiles} files / ${aEnt} entries (duplicates collapsed, tombstone purged). And the data is now sorted and non-overlapping. Continue to GET 25 once more and compare.`);
+  const after=await doGet('25');
+  log(`The same lookup now examined ${after} structures, down from ${before}. Compaction reclaimed space AND cut read amplification — that is the trade LSM-trees make: cheap writes now, tidy up later.`,'c-find');
+}
+const SCN={1:s1,2:s2,3:s3,4:s4,5:s5,6:s6};
+document.querySelectorAll('.scn').forEach(b=>b.onclick=()=>guard(()=>scenario(SCN[b.dataset.s])));
+
+/* ===== WRITE RACE ENGINE ===== */
+function buildTrack(id,cls){const t=$(id);t.innerHTML='';for(let i=0;i<RACE_N;i++){const c=document.createElement('div');c.className='slot '+cls;t.appendChild(c);}const h=document.createElement('div');h.className='head '+cls;h.innerHTML='<span class="lbl">head</span>';h.style.left='0%';t.appendChild(h);return t;}
+function headTo(track,idx){const h=track.querySelector('.head');h.style.left=((idx+0.5)/RACE_N*100)+'%';}
+async function runRace(){
+  $('raceN').textContent=RACE_N;$('costLSM').textContent='0';$('costBT').textContent='0';
+  $('barLSM').style.width='0%';$('barBT').style.width='0%';$('raceResult').innerHTML='';
+  const tL=buildTrack('trackLSM','lsm'),tB=buildTrack('trackBT','bt');
+  $('race').hidden=false;await wait(400);
+  let costL=0,costB=0,prevB=0;const REF=180;
+  for(let i=0;i<RACE_N;i++){
+    // LSM: append at position i, sequential, cost 1
+    tL.querySelectorAll('.slot')[i].classList.add('w');headTo(tL,i);costL+=1;
+    // B-tree: jump to a random page, cost = 1 + seek distance
+    const r=Math.floor(Math.random()*RACE_N);const jump=Math.abs(r-prevB);prevB=r;
+    tB.querySelectorAll('.slot')[r].classList.add('w');headTo(tB,r);costB+=1+jump;
+    $('costLSM').textContent=costL;$('costBT').textContent=costB;
+    $('barLSM').style.width=Math.min(100,costL/REF*100)+'%';
+    $('barBT').style.width=Math.min(100,costB/REF*100)+'%';
+    await wait(RACE_STEP);
+  }
+  const ratio=(costB/costL).toFixed(1);
+  $('raceResult').innerHTML=`Same ${RACE_N} writes — LSM disk-cost <b>${costL}</b> vs B-tree <span class="x">${costB}</span>. The B-tree did <span class="x">~${ratio}×</span> more disk work, dominated by random seeks.`
+    + `<div class="scale"><div class="scale-h">Now scale it up: <b>1,000,000 writes</b> on a spinning hard disk, where one random seek ≈ 10&nbsp;ms but a sequential append is almost free:</div>`
+    + `<div class="scale-row"><span class="scale-lbl" style="color:var(--mem)">LSM · sequential</span><span class="scale-track"><i style="width:0.4%"></i></span><span class="scale-t" style="color:var(--mem)">≈ 10 sec</span></div>`
+    + `<div class="scale-row"><span class="scale-lbl" style="color:var(--del)">B-tree · random</span><span class="scale-track"><i class="bad" style="width:100%"></i></span><span class="scale-t" style="color:var(--del)">≈ 2.8 hrs</span></div>`
+    + `</div>`;
+}
+
+/* ===== BOOT ===== */
+log('Pick a guided scenario on the right, or PUT / GET / DELETE a key yourself.','c-muted');
+log('The explanation is folded — open it any time with “show explanation”.','c-muted');
+setFold(true);
+render();
+</script>
+</body>
+</html>

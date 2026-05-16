@@ -1,0 +1,37 @@
+<figure>
+<svg viewBox="0 0 680 300" xmlns="http://www.w3.org/2000/svg" font-family="monospace" font-size="12">
+  <defs>
+    <marker id="a6b" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#0b5fa5"/></marker>
+    <marker id="a6r" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#b03a2e"/></marker>
+  </defs>
+
+  <text x="10" y="22" fill="#0b5fa5">1. insert "foo" &#8594; set its k bits to 1</text>
+  <line x1="64"  y1="40" x2="64"  y2="98" stroke="#0b5fa5" stroke-width="1.5" marker-end="url(#a6b)"/>
+  <line x1="226" y1="40" x2="226" y2="98" stroke="#0b5fa5" stroke-width="1.5" marker-end="url(#a6b)"/>
+  <line x1="388" y1="40" x2="388" y2="98" stroke="#0b5fa5" stroke-width="1.5" marker-end="url(#a6b)"/>
+
+  <!-- bit array: 12 cells, w=48 gap=6, start x=10, y=100 -->
+  <g text-anchor="middle">
+    <rect x="10"  y="100" width="48" height="42" rx="2" fill="#f5f5f5" stroke="#1a1a1a"/><text x="34"  y="127">0</text>
+    <rect x="64"  y="100" width="48" height="42" rx="2" fill="#eaf2fa" stroke="#0b5fa5" stroke-width="1.5"/><text x="88"  y="127" fill="#0b5fa5">1</text>
+    <rect x="118" y="100" width="48" height="42" rx="2" fill="#f5f5f5" stroke="#1a1a1a"/><text x="142" y="127">1</text>
+    <rect x="172" y="100" width="48" height="42" rx="2" fill="#f5f5f5" stroke="#1a1a1a"/><text x="196" y="127">0</text>
+    <rect x="226" y="100" width="48" height="42" rx="2" fill="#eaf2fa" stroke="#0b5fa5" stroke-width="1.5"/><text x="250" y="127" fill="#0b5fa5">1</text>
+    <rect x="280" y="100" width="48" height="42" rx="2" fill="#f5f5f5" stroke="#1a1a1a"/><text x="304" y="127">0</text>
+    <rect x="334" y="100" width="48" height="42" rx="2" fill="#f5f5f5" stroke="#1a1a1a"/><text x="358" y="127">1</text>
+    <rect x="388" y="100" width="48" height="42" rx="2" fill="#eaf2fa" stroke="#0b5fa5" stroke-width="1.5"/><text x="412" y="127" fill="#0b5fa5">1</text>
+    <rect x="442" y="100" width="48" height="42" rx="2" fill="#f7eae8" stroke="#b03a2e" stroke-width="1.5"/><text x="466" y="127" fill="#b03a2e">0</text>
+    <rect x="496" y="100" width="48" height="42" rx="2" fill="#f5f5f5" stroke="#1a1a1a"/><text x="520" y="127">0</text>
+    <rect x="550" y="100" width="48" height="42" rx="2" fill="#f5f5f5" stroke="#1a1a1a"/><text x="574" y="127">1</text>
+    <rect x="604" y="100" width="48" height="42" rx="2" fill="#f5f5f5" stroke="#1a1a1a"/><text x="628" y="127">0</text>
+  </g>
+
+  <!-- query bar checks cells 2(=1), 8(=0), 10(=1): centers 142, 466, 574 -->
+  <line x1="142" y1="190" x2="142" y2="144" stroke="#b03a2e" stroke-width="1.5" marker-end="url(#a6r)"/>
+  <line x1="466" y1="190" x2="466" y2="144" stroke="#b03a2e" stroke-width="1.5" marker-end="url(#a6r)"/>
+  <line x1="574" y1="190" x2="574" y2="144" stroke="#b03a2e" stroke-width="1.5" marker-end="url(#a6r)"/>
+  <text x="10" y="212" fill="#b03a2e">2. query "bar" &#8594; check its k bits</text>
+  <text x="466" y="212" text-anchor="middle" fill="#b03a2e">one bit is 0</text>
+  <text x="340" y="256" text-anchor="middle" fill="#555">a single 0 &#8658; key is definitely absent &#8658; skip this SSTable entirely</text>
+</svg>
+</figure>

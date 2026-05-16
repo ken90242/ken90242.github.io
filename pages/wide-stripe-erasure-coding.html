@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>From Replication to Wide-Stripe Erasure Coding</title>
+<style>
+  body {
+    margin: 1.5em;
+    font-family: "Times New Roman", Times, Georgia, serif;
+    font-size: 18px;
+    line-height: 1.5;
+    color: #000;
+    -webkit-text-size-adjust: 100%;
+  }
+  p, li { overflow-wrap: break-word; }
+  pre {
+    overflow-x: auto;
+    font-size: 14px;
+    line-height: 1.4;
+  }
+  /* On narrow screens, let wide tables scroll instead of breaking the layout. */
+  @media (max-width: 600px) {
+    table {
+      display: block;
+      width: 100%;
+      overflow-x: auto;
+      white-space: nowrap;
+    }
+  }
+</style>
+</head>
+<body>
+<h2>From Replication to Wide-Stripe Erasure Coding: Why Distributed Storage Got Smarter About Redundancy</h2>
+
+<p><em>How four trade-offs shape the way modern systems balance space, durability, and recovery</em></p>
+
+<p>Ken Han, 2026</p>
+
+<hr>
+
+<p>After a few years working in the distributed storage industry, I've noticed something: at petabyte scale, the cost of replication starts to dominate everything else. That's where things get interesting.</p>
+
+<p>The concept of replication makes sense for small-scale data, but doesn't scale to petabyte storage. Imagine your customer pays for 1PB of storage, but you're telling them the storage has to be shrunk to at least half for high availability. You say that's the cost of high availability. But maybe we can do better? Maybe we can just back up a third? A tenth? Or even 1/25? Here is where erasure coding kicks in, typically for cold storage, archives, and large-scale cost-sensitive workloads where the storage savings outweigh the operational costs we'll discuss below.</p>
+
+<p>Conceptually, erasure coding is a generalization of replication. Instead of storing K identical copies, you slice the data into N pieces, compute M parity pieces, and store all N+M pieces across different drives. Lose any M, and you can reconstruct the rest.</p>
+
+<p>You may think of RAID. RAID 1 deprives you of 50% of storage, while RAID 6 reserves 2 drives for parity and scales more efficiently as the array gets larger. However, RAID is bound to physical drives, while erasure coding works on logical units that can span entire datacenters. Erasure coding is a generalization of RAID.</p>
+
+<p>But here's what I didn't understand until I started reading design discussions: the choice of N and M isn't free, and it isn't obvious. Different systems pick wildly different configurations. Backblaze runs 17+3. Hadoop ships 6+3 by default. High-density enterprise storage often goes wider still, like 25+3 or beyond. Why?</p>
+
+<p>The naive answer is "wider is more efficient, so make it as wide as you can." But that's not what happens in practice. There's something pushing back. Actually, there are four things pushing back, and they pull in different directions.</p>
+
+<p>This post is my attempt to write down what I learned, starting from why replication isn't enough, walking through how erasure coding generalizes it, and then unpacking the four trade-offs that determine where stripe width actually lands:</p>
+
+<ol>
+  <li><strong>Space efficiency</strong>, the reason you went wide in the first place.</li>
+  <li><strong>Durability</strong>: wider stripes can be less reliable at the cluster level, even with the same parity count.</li>
+  <li><strong>Repair bandwidth</strong>: fixing one dead drive in a wider stripe means reading more data from more places.</li>
+  <li><strong>Hardware topology</strong>: your cluster has to physically be big enough to host the failure domains a wide stripe requires.</li>
+</ol>
+
+<p>The width any real system picks is the equilibrium of these four forces. There is no universal best answer, and once you see why, the wildly different choices of Backblaze, Hadoop, and Azure stop looking arbitrary.</p>
+
+<hr>
+
+<h3>1. Space efficiency</h3>
+
+<p>Let's start with the force that pulls us toward wider stripes in the first place, the reason erasure coding exists at all.</p>
+
+<p>In the intro we saw that replication is wasteful: 2× replication leaves us with 50% usable capacity, 3× replication with only 33%. For a 1PB customer, that means buying 2 to 3PB of raw drives. This is what EC is designed to fix.</p>
+
+<p>Instead of storing K identical copies, EC slices the data into N data chunks and computes M parity chunks. The total cost is N+M, but the usable capacity is N. So the overhead is M/N, not (K-1)/K like replication. Here's the key: <strong>the parity cost is amortized across N data chunks</strong>. The more data chunks we pack into one stripe, the smaller each chunk's share of the parity overhead becomes.</p>
+
+<p>This is why "go wider" is tempting. <em>(Throughout this post, we'll fix M=2 to keep the comparisons clean; the same intuitions hold for M=3.)</em></p>
+
+<table border="1" cellpadding="6" cellspacing="0" style="border-collapse: collapse;">
+  <thead>
+    <tr>
+      <th>Data shards</th>
+      <th>Parity shards</th>
+      <th>Usable / Total</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td>1</td><td>1</td><td>50%</td></tr>
+    <tr><td>1</td><td>2</td><td>33%</td></tr>
+    <tr><td>4</td><td>2</td><td>67%</td></tr>
+    <tr><td>6</td><td>2</td><td>75%</td></tr>
+    <tr><td>10</td><td>2</td><td>83%</td></tr>
+    <tr><td>16</td><td>2</td><td>89%</td></tr>
+    <tr><td>20</td><td>2</td><td>91%</td></tr>
+  </tbody>
+</table>
+
+<p>From 3× replication's 33% to 20+2's 91%, we're getting nearly three times the usable capacity from the same raw drives, all for the same level of redundancy on paper (tolerating 2 simultaneous failures). On a 1PB customer order, that's the difference between buying 3PB of drives and buying 1.1PB.</p>
+
+<p>If this were the only consideration, every system would just pick the widest N possible, say 50+2 or 100+2, and call it a day. But that's not what happens in practice. Backblaze stops at 17+3. Hadoop ships 6+3. Why?</p>
+
+<p>Because the other three trade-offs push back. The next three sections explain how.</p>
+
+<hr>
+
+<h3>2. Durability</h3>
+
+<p>We've seen that wider stripes give us better space efficiency. But does that come for free? To answer this, we need a way to quantify durability, and the standard metric is <strong>MTTDL (Mean Time To Data Loss)</strong>, which evaluates how long until a configuration experiences data loss.</p>
+
+<p>For data loss to happen, we have to first lose any two shards (either parity or data), entering a degraded state, then fail to read a bit from at least one remaining shard during rebuild.</p>
+
+<p><em>Note: we're modeling the most realistic failure path: two drives fail, then a bit-read error during rebuild. Other paths exist (three simultaneous drive failures, multiple bit errors) but they're rarer.</em></p>
+
+<p>To make this concrete, we need five parameters: AFR, UBER, drive capacity, drive fullness, and (later) recovery speed.</p>
+
+<ul>
+  <li><strong>AFR (Annual Failure Rate)</strong>: the probability that a drive fails in a given year. We'll use 1%.</li>
+  <li><strong>UBER (Unrecoverable Bit Error Rate)</strong>: the probability that a single bit read from a drive fails to return correctly. We'll use 1e-15.</li>
+  <li><strong>Drive capacity</strong>: 1 TB.</li>
+  <li><strong>Drive fullness</strong>: 80%.</li>
+</ul>
+
+<p>In this example, MTTDL would be:</p>
+
+<pre><code>a1. Chance of two drives becoming unavailable per year
+    C(8, 2) × 1%² × 99%⁶ = 0.26%
+
+a2. Chance the remaining data can't be reassembled
+    = actual data (in bits) × chance a bit can't be read
+    = 6 × 1TB × 80% × 8 × 10¹² × 1e-15
+    ≈ 0.04 unreadable bits on average
+    → probability of at least one unreadable bit ≈ 4%
+
+a3. Combine: both events in the same year
+    0.26% × 4% = 0.01%
+
+a4. MTTDL
+    100% / 0.01% ≈ 10,000 years
+</code></pre>
+
+<p>Of course, no real system would just sit and wait. We'd start a recovery strategy as soon as we detect a drive failure. Conceptually, that means reading data from the remaining shards, reconstructing the lost ones, and redistributing them across available drives (assuming we still have enough drives for a stripe).</p>
+
+<p>So we introduce another parameter: <strong>data recovery speed</strong>. With recovery in place, MTTDL improves because the risk window is now limited to the rebuild duration.</p>
+
+<ul>
+  <li><strong>Data recovery speed</strong>: 128 MB/s in this example.</li>
+</ul>
+
+<pre><code>b1. Rebuild time window
+    = (6 × 8 × 10¹² × 80%) bits / (128 × 8 × 10⁶) bits/s
+    = 3.84 × 10¹³ bits / 1.024 × 10⁹ bits/s
+    ≈ 37,500 seconds ≈ 0.001 year
+
+b2. The rebuild window only occupies ~0.1% of a year.
+
+b3. From a3, the chance the bit-error event lands within the rebuild window
+    = 0.01% × 0.1% = 0.00001%
+
+b4. MTTDL
+    = 100% / 0.00001% ≈ 10,000,000 years
+</code></pre>
+
+<p>That's a <strong>1000× improvement</strong> compared to a4. Recovery shrinks the risk window so much that MTTDL jumps from 10,000 years to 10 million. This is why every real system invests heavily in rebuild speed: faster recovery directly buys durability.</p>
+
+<p>So we now know how to calculate MTTDL. But how does it relate to stripe length? From the following table, you can clearly see that as the stripe gets longer, MTTDL drops significantly.</p>
+
+<table border="1" cellpadding="6" cellspacing="0" style="border-collapse: collapse;">
+  <thead>
+    <tr>
+      <th>Data shards</th>
+      <th>Parity shards</th>
+      <th>P(lose 2 drives/yr)</th>
+      <th>P(UBER on rebuild)</th>
+      <th>Rebuild window</th>
+      <th>MTTDL</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td>4</td><td>2</td><td>0.14%</td><td>2.6%</td><td>~7 hr</td><td>~30M years</td></tr>
+    <tr><td>6</td><td>2</td><td>0.26%</td><td>4%</td><td>~10 hr</td><td>~10M years</td></tr>
+    <tr><td>10</td><td>2</td><td>0.60%</td><td>6.4%</td><td>~17 hr</td><td>~1.3M years</td></tr>
+    <tr><td>16</td><td>2</td><td>1.30%</td><td>10.2%</td><td>~28 hr</td><td>~240K years</td></tr>
+    <tr><td>20</td><td>2</td><td>1.89%</td><td>12.8%</td><td>~35 hr</td><td>~100K years</td></tr>
+  </tbody>
+</table>
+
+<p>Three things get worse at the same time as N grows: more drives means a higher chance of losing 2; more data to read during rebuild means a higher UBER probability; and a longer rebuild window means a longer degraded state. Together, going from 4+2 to 20+2 (gaining just 24 percentage points of space efficiency) costs us roughly <strong>300× in durability</strong>.</p>
+
+<p>One important caveat: all of this math assumes drive failures are independent of each other. In reality, drives bought from the same batch tend to fail around the same time; drives in the same rack share temperature, vibration, and power; firmware bugs can take out entire fleets at once. This is why hardware topology matters. We'll come back to this in trade-off 4, where we'll see that maintaining failure independence is the job of the failure domain. MTTDL isn't a literal prediction of when your data will die; it's a tool for comparing configurations.</p>
+
+<hr>
+
+<h3>3. Repair bandwidth</h3>
+
+<p>Under replication, recovering a lost drive is cheap. Just copy the data from another replica, 1× the data we lost, and we're done. EC is fundamentally different: to reconstruct a chunk, we have to read the rest of the stripe, decode, and write the result back.</p>
+
+<p>This brings a hidden but significant cost. In a 6+2 stripe, recovering one lost chunk requires reading the other 6 data chunks from the stripe. So to rebuild a single 1TB drive, we have to pull roughly 6TB across the network. <strong>The read amplification factor is N</strong>. In a 20+2 stripe, that same recovery would pull 20TB.</p>
+
+<table border="1" cellpadding="6" cellspacing="0" style="border-collapse: collapse;">
+  <thead>
+    <tr>
+      <th>Data shards</th>
+      <th>Parity shards</th>
+      <th>Read amplification</th>
+      <th>Data to read on repair</th>
+      <th>Time at 128 MB/s</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td>1</td><td>2 (replication)</td><td>1×</td><td>800 GB</td><td>~2 hr</td></tr>
+    <tr><td>4</td><td>2</td><td>4×</td><td>3.2 TB</td><td>~7 hr</td></tr>
+    <tr><td>6</td><td>2</td><td>6×</td><td>4.8 TB</td><td>~10 hr</td></tr>
+    <tr><td>10</td><td>2</td><td>10×</td><td>8 TB</td><td>~17 hr</td></tr>
+    <tr><td>16</td><td>2</td><td>16×</td><td>12.8 TB</td><td>~28 hr</td></tr>
+    <tr><td>20</td><td>2</td><td>20×</td><td>16 TB</td><td>~35 hr</td></tr>
+  </tbody>
+</table>
+
+<p>That traffic isn't free. It consumes network bandwidth, eats into the read/write bandwidth of every drive involved in the stripe, and competes with frontend user traffic on the same hardware. And because each EC chunk is spread across different failure domains (we'll see why in trade-off 4), this traffic is necessarily cross-host; there's no shortcut around the network fabric.</p>
+
+<p>Faced with this, real systems throttle their repair speed to avoid degrading the cluster's online performance. But throttling stretches the rebuild window, which directly hurts MTTDL (recall trade-off 2: longer rebuild window = bigger risk window = worse durability). So wider stripes don't just have worse durability on paper; they're also harder to repair in practice, which compounds the durability problem. <strong>The two trade-offs reinforce each other.</strong></p>
+
+<hr>
+
+<h3>4. Hardware topology</h3>
+
+<p>When we talk about drives, it's tempting to think: if I have enough drives, I get the full benefit of parity protection, right?</p>
+
+<p>Yes and no.</p>
+
+<p>It's true that this strategy protects against individual drive failures and the associated data loss. However, the data might end up on the same server, or in the same rack. In events such as a server going down, a network failure on a particular server, or power loss across an entire rack, the parity wouldn't take effect the way we expected.</p>
+
+<p>To address this, we need to define the <strong>failure domain</strong>: a boundary within which components tend to fail together. The parity also needs to avoid being allocated within the same failure domain.</p>
+
+<p>For example, take a 6+2 stripe: 6 data chunks and 2 parity, 8 chunks total, tolerant of losing 2. If we pack 4 chunks per server, we only need 2 servers. But losing either server takes out 4 chunks at once, far more than the 2 we can recover from, so the parity offers no real protection against server-level failure. To actually survive a server failure, those 8 chunks need to be allocated across 8 individual servers, an implicit requirement of the stripe configuration. And if we only have 2 servers, we can't satisfy the failure domain isolation requirement at all, which in turn limits the data width.</p>
+
+<p>So the data width is not purely a mathematical optimization. It's bounded by the hardware topology. The shape of the cluster determines how wide the data width can be; conversely, once the data width is chosen, it also constrains future scalability.</p>
+
+<hr>
+
+<h3>Putting it together: why real systems land where they do</h3>
+
+<p>We started this post with a puzzle: Backblaze, Hadoop, and high-density enterprise systems all run EC, but they pick wildly different stripe widths. With the four trade-offs laid out, those choices stop looking arbitrary. Each one is a specific equilibrium point in the same four-way tug-of-war.</p>
+
+<p><strong><em>Hadoop trades space efficiency for the ability to run anywhere.</em></strong></p>
+
+<p>Hadoop's 6+3 is the conservative choice. HDFS deployments range from a dozen nodes to thousands, so the default config has to fit the smallest realistic cluster: 9 chunks per stripe means 9 failure domains required, which most mid-sized deployments can satisfy.</p>
+
+<p>The transition from 3× replication to 6+3 doubles usable capacity (33% → 67%) while keeping M=3 to absorb the durability hit that comes with widening N. The repair bandwidth cost is acceptable because HDFS workloads (MapReduce, Spark, batch analytics) are throughput-oriented and tolerant of repair traffic.</p>
+
+<p><strong><em>Backblaze trades repair complexity for space efficiency they can monetize.</em></strong></p>
+
+<p>Backblaze's 17+3 is the aggressive choice, made possible by their scale. With many storage pods per vault, they have the topology to spread 20 chunks across well-isolated failure domains; with their cold-storage workload, the repair bandwidth cost is absorbed by their operators. The M=3 buys back the durability they'd otherwise lose at this width.</p>
+
+<p><strong><em>High-density 25+3: maximum density, only for those who can pay the operational price.</em></strong></p>
+
+<p>High-density 25+3 pushes the same logic further: 89% usable capacity, but requiring 28 failure domains and absorbing even more repair pain. Only systems with the topology and the operational capacity to handle this make the trade.</p>
+
+<p>There is no universal best answer. The right N+M depends on how big your cluster is, what your workload looks like, how much you're willing to pay for drives versus network bandwidth, and how much you trust your hardware topology. <strong>What changes between Backblaze and Hadoop isn't the math. It's where each one chose to stand.</strong></p>
+
+<hr>
+
+<p style="font-size: 14px; color: #555;">
+  [1] Apache HDFS. "Erasure Coding." <a href="https://hadoop.apache.org/docs/current/hadoop-project-dist/hadoop-hdfs/HDFSErasureCoding.html">https://hadoop.apache.org/docs/current/hadoop-project-dist/hadoop-hdfs/HDFSErasureCoding.html</a><br>
+  [2] Backblaze Blog. "Reed-Solomon Erasure Coding." <a href="https://www.backblaze.com/blog/reed-solomon/">https://www.backblaze.com/blog/reed-solomon/</a>
+</p>
+</body>
+</html>
